@@ -1,4 +1,4 @@
-# School Management System
+# EinsERP
 
 Next.js 15 (App Router) + Supabase (Postgres + Auth) + Vercel.
 
@@ -25,7 +25,7 @@ npm run dev                  # http://localhost:3000
 ```bash
 git init && git add . && git commit -m "Initial school management system"
 git branch -M main
-git remote add origin https://github.com/<your-username>/school-management.git
+git remote add origin https://github.com/<your-username>/einserp.git
 git push -u origin main
 ```
 
@@ -44,3 +44,8 @@ aur role-based policies (admin / teacher / parent) add karni hongi.
 ## Aage ke modules
 
 Timetable, teacher/staff aur salary, parent portal, SMS/WhatsApp fee reminders, notices.
+
+## Roles (migration 002)
+
+`supabase/002_roles.sql` ko SQL Editor mein run karein. Roles: `admin`, `accountant`, `teacher`, `parent`.
+Naya user Supabase Dashboard se banayein; wo `pending` rahega jab tak admin **Users** page se role na de.

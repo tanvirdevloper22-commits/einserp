@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 async function saveMarks(formData: FormData) {
   "use server";
+  await requireRole(["admin", "teacher"]);
   const supabase = await createClient();
   const examId = String(formData.get("exam_id"));
   const subjectId = String(formData.get("subject_id"));
@@ -42,6 +44,7 @@ export default async function ExamPage({
   params: Promise<{ examId: string }>;
   searchParams: Promise<{ class?: string; subject?: string }>;
 }) {
+  await requireRole(["admin", "teacher"]);
   const { examId } = await params;
   const sp = await searchParams;
   const supabase = await createClient();

@@ -2,12 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PrintButton from "@/components/PrintButton";
+import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
 
 export default async function ReceiptsPage({ params }: { params: Promise<{ feeId: string }> }) {
+  await requireRole(["admin", "accountant"]);
   const { feeId } = await params;
   const supabase = await createClient();
 

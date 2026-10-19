@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PrintButton from "@/components/PrintButton";
+import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function ReportCard({
 }: {
   params: Promise<{ examId: string; studentId: string }>;
 }) {
+  await requireRole(["admin", "teacher"]);
   const { examId, studentId } = await params;
   const supabase = await createClient();
 

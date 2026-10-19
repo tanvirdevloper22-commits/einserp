@@ -1,10 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 async function saveAttendance(formData: FormData) {
   "use server";
+  await requireRole(["admin", "teacher"]);
   const supabase = await createClient();
   const date = String(formData.get("date"));
   const rows: { student_id: string; date: string; status: string }[] = [];
@@ -31,6 +33,7 @@ export default async function AttendancePage({
 }: {
   searchParams: Promise<{ class?: string; date?: string }>;
 }) {
+  await requireRole(["admin", "teacher"]);
   const sp = await searchParams;
   const date = sp.date ?? new Date().toISOString().slice(0, 10);
   const supabase = await createClient();

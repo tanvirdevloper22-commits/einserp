@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 async function addFee(formData: FormData) {
   "use server";
+  await requireRole(["admin", "accountant"]);
   const supabase = await createClient();
   const classId = String(formData.get("class_id") ?? "");
   const studentId = String(formData.get("student_id") ?? "");
@@ -35,6 +37,7 @@ async function addFee(formData: FormData) {
 
 async function recordPayment(formData: FormData) {
   "use server";
+  await requireRole(["admin", "accountant"]);
   const supabase = await createClient();
   await supabase.from("payments").insert({
     fee_id: String(formData.get("fee_id")),
@@ -51,6 +54,7 @@ export default async function FeesPage({
 }: {
   searchParams: Promise<{ pending?: string }>;
 }) {
+  await requireRole(["admin", "accountant"]);
   const { pending } = await searchParams;
   const supabase = await createClient();
 

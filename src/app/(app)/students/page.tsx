@@ -1,10 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireRole, STAFF_ROLES } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 async function addStudent(formData: FormData) {
   "use server";
+  await requireRole(["admin"]);
   const supabase = await createClient();
   const text = (k: string) => String(formData.get(k) ?? "").trim() || null;
   await supabase.from("students").insert({
@@ -22,6 +24,7 @@ async function addStudent(formData: FormData) {
 
 async function removeStudent(formData: FormData) {
   "use server";
+  await requireRole(["admin"]);
   const supabase = await createClient();
   await supabase.from("students").delete().eq("id", String(formData.get("id")));
   revalidatePath("/students");
@@ -32,6 +35,8 @@ export default async function StudentsPage({
 }: {
   searchParams: Promise<{ class?: string }>;
 }) {
+  const { role } = await requireRole(STAFF_ROLES);
+  const isAdmin = role === "admin";
   const { class: classFilter } = await searchParams;
   const supabase = await createClient();
 
@@ -64,6 +69,7 @@ export default async function StudentsPage({
         </form>
       </div>
 
+      {isAdmin && (
       <form action={addStudent} className="card" style={{ marginBottom: 18 }}>
         <h2>New admission</h2>
         <div className="form-grid">
@@ -94,6 +100,7 @@ export default async function StudentsPage({
         </div>
         <div style={{ marginTop: 14 }}><button className="btn">Add student</button></div>
       </form>
+      )}
 
       <div className="card">
         <table>
@@ -111,10 +118,12 @@ export default async function StudentsPage({
                   <td>{s.guardian_name ?? "-"}{s.guardian_phone ? ` (${s.guardian_phone})` : ""}</td>
                   <td><span className={`badge ${s.status === "active" ? "ok" : "neutral"}`}>{s.status}</span></td>
                   <td className="num">
-                    <form action={removeStudent}>
-                      <input type="hidden" name="id" value={s.id} />
-                      <button className="btn ghost small">Delete</button>
-                    </form>
+                    {isAdmin && (
+                      <form action={removeStudent}>
+                        <input type="hidden" name="id" value={s.id} />
+                        <button className="btn ghost small">Delete</button>
+                      </form>
+                    )}
                   </td>
                 </tr>
               );

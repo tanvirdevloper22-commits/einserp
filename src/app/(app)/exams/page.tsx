@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 async function addExam(formData: FormData) {
   "use server";
+  await requireRole(["admin"]);
   const supabase = await createClient();
   await supabase.from("exams").insert({
     name: String(formData.get("name")).trim(),
@@ -16,12 +18,15 @@ async function addExam(formData: FormData) {
 
 async function addSubject(formData: FormData) {
   "use server";
+  await requireRole(["admin"]);
   const supabase = await createClient();
   await supabase.from("subjects").insert({ name: String(formData.get("name")).trim() });
   revalidatePath("/exams");
 }
 
 export default async function ExamsPage() {
+  const { role } = await requireRole(["admin", "teacher"]);
+  const isAdmin = role === "admin";
   const supabase = await createClient();
   const [{ data: exams }, { data: subjects }] = await Promise.all([
     supabase.from("exams").select("*").order("created_at", { ascending: false }),
@@ -33,6 +38,7 @@ export default async function ExamsPage() {
       <h1>Exams & Report Cards</h1>
       <p className="sub">Exam banayein, marks bharein aur report card print karein</p>
 
+      {isAdmin && (
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", marginBottom: 18 }}>
         <form action={addExam} className="card">
           <h2>New exam</h2>
@@ -47,6 +53,7 @@ export default async function ExamsPage() {
           <button className="btn ghost">Add subject</button>
         </form>
       </div>
+      )}
 
       <div className="card">
         <table>
