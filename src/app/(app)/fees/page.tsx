@@ -69,8 +69,16 @@ export default async function FeesPage({
 
   return (
     <>
-      <h1>Fees</h1>
-      <p className="sub">Fee lagayein, payment jama karein aur receipt nikaalein</p>
+      <div className="header-row">
+        <div>
+          <h1>Fees</h1>
+          <p className="sub" style={{ marginBottom: 0 }}>Fee lagayein, payment jama karein aur receipt nikaalein</p>
+        </div>
+        <div className="row">
+          <Link className="btn ghost small" href="/fees/structure">Fee structure</Link>
+          <Link className="btn ghost small" href="/fees/defaulters">Defaulters</Link>
+        </div>
+      </div>
 
       <form action={addFee} className="card" style={{ marginBottom: 18 }}>
         <h2>Add fee</h2>

@@ -49,3 +49,9 @@ Timetable, teacher/staff aur salary, parent portal, SMS/WhatsApp fee reminders, 
 
 `supabase/002_roles.sql` ko SQL Editor mein run karein. Roles: `admin`, `accountant`, `teacher`, `parent`.
 Naya user Supabase Dashboard se banayein; wo `pending` rahega jab tak admin **Users** page se role na de.
+
+## Fee structure (migration 003)
+
+`supabase/003_fee_structure.sql` ko SQL Editor mein run karein (002 ke baad).
+Fees → **Fee structure** se class-wise fee items set karein aur ek click mein poori class par generate karein.
+Fees → **Defaulters** se baaki fees ki list aur CSV download milti hai.

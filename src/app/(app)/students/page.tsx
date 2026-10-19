@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole, STAFF_ROLES } from "@/lib/auth";
@@ -119,10 +120,13 @@ export default async function StudentsPage({
                   <td><span className={`badge ${s.status === "active" ? "ok" : "neutral"}`}>{s.status}</span></td>
                   <td className="num">
                     {isAdmin && (
-                      <form action={removeStudent}>
-                        <input type="hidden" name="id" value={s.id} />
-                        <button className="btn ghost small">Delete</button>
-                      </form>
+                      <div className="row" style={{ justifyContent: "flex-end", gap: 6 }}>
+                        <Link className="btn ghost small" href={`/students/${s.id}/edit`}>Edit</Link>
+                        <form action={removeStudent}>
+                          <input type="hidden" name="id" value={s.id} />
+                          <button className="btn ghost small">Delete</button>
+                        </form>
+                      </div>
                     )}
                   </td>
                 </tr>
