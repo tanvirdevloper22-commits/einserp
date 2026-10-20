@@ -1,10 +1,15 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Dashboard" };
+
+const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
 
 export default async function Dashboard() {
-  // Dashboard par requireRole nahi lagate: wrong-role redirect yahin aata hai, loop ban jayega.
+  // No requireRole here: a wrong-role redirect lands on this page, so guarding it would loop.
   const { role, fullName } = await getProfile();
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
@@ -24,34 +29,53 @@ export default async function Dashboard() {
   ]);
 
   const totalDue = (balances.data ?? []).reduce((s, r) => s + Number(r.due), 0);
+  const firstName = fullName.split(" ")[0];
+  const dateLabel = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  const actions: { href: string; label: string; show: boolean }[] = [
+    { href: "/students", label: "Add a student", show: role === "admin" },
+    { href: "/attendance", label: "Mark attendance", show: showAttendance },
+    { href: "/fees", label: "Collect a payment", show: showFees },
+    { href: "/fees/defaulters", label: "View fee defaulters", show: showFees },
+    { href: "/exams", label: "Enter exam marks", show: showAttendance },
+  ];
 
   return (
     <>
-      <h1>Dashboard</h1>
-      <p className="sub">{fullName ? `Namaste, ${fullName}. ` : ""}Aaj ka overview</p>
+      <PageHeader title={firstName ? `Welcome back, ${firstName}` : "Dashboard"} description={dateLabel} />
+
       <div className="grid stats">
         <div className="card stat">
-          <div className="label">Active students</div>
-          <div className="value">{students.count ?? 0}</div>
+          <span className="label">Active students</span>
+          <span className="value">{students.count ?? 0}</span>
         </div>
         {showAttendance && (
           <>
             <div className="card stat">
-              <div className="label">Present today</div>
-              <div className="value">{present.count ?? 0}</div>
+              <span className="label">Present today</span>
+              <span className="value">{present.count ?? 0}</span>
             </div>
             <div className="card stat">
-              <div className="label">Absent today</div>
-              <div className="value">{absent.count ?? 0}</div>
+              <span className="label">Absent today</span>
+              <span className="value">{absent.count ?? 0}</span>
             </div>
           </>
         )}
         {showFees && (
           <div className="card stat">
-            <div className="label">Total fees due</div>
-            <div className="value">₹{totalDue.toLocaleString("en-IN")}</div>
+            <span className="label">Fees outstanding</span>
+            <span className="value">{inr(totalDue)}</span>
           </div>
         )}
+      </div>
+
+      <div className="card">
+        <h2>Quick actions</h2>
+        <div className="row tight">
+          {actions.filter((a) => a.show).map((a) => (
+            <Link key={a.href} className="btn ghost" href={a.href}>{a.label}</Link>
+          ))}
+        </div>
       </div>
     </>
   );

@@ -2,8 +2,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { getDefaulters } from "@/lib/defaulters";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Fee defaulters" };
 
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
 
@@ -26,59 +28,66 @@ export default async function DefaultersPage({
 
   return (
     <>
-      <div className="header-row">
-        <div>
-          <h1>Fee defaulters</h1>
-          <p className="sub">Jinki fees baaki hai unki list</p>
-        </div>
-        <div className="row">
-          <Link className="btn ghost small" href="/fees">← Back to fees</Link>
-          <a className="btn small" href={`/fees/defaulters/export${classId ? `?class=${classId}` : ""}`}>Download CSV</a>
-        </div>
-      </div>
+      <PageHeader title="Fee defaulters" description="Students with unpaid fees, largest balance first.">
+        <Link className="btn ghost" href="/fees">Back to fees</Link>
+        <a className="btn" href={`/fees/defaulters/export${classId ? `?class=${classId}` : ""}`}>Download CSV</a>
+      </PageHeader>
 
       <div className="grid stats">
-        <div className="card stat"><div className="label">Defaulters</div><div className="value">{rows.length}</div></div>
-        <div className="card stat"><div className="label">Total due</div><div className="value">{inr(grandTotal)}</div></div>
-        <div className="card stat"><div className="label">Overdue (due date nikal gayi)</div><div className="value">{inr(grandOverdue)}</div></div>
+        <div className="card stat"><span className="label">Students with dues</span><span className="value">{rows.length}</span></div>
+        <div className="card stat"><span className="label">Total outstanding</span><span className="value">{inr(grandTotal)}</span></div>
+        <div className="card stat"><span className="label">Past due date</span><span className="value">{inr(grandOverdue)}</span></div>
       </div>
 
-      <form method="get" className="row card no-print" style={{ marginBottom: 18 }}>
-        <div className="grow">
-          <label htmlFor="class">Class</label>
-          <select id="class" name="class" defaultValue={classId ?? ""}>
-            <option value="">All classes</option>
-            {classes?.map((c) => <option key={c.id} value={c.id}>{c.name} - {c.section}</option>)}
-          </select>
+      <form method="get" className="card toolbar no-print">
+        <div className="row">
+          <div className="grow" style={{ maxWidth: 280 }}>
+            <label htmlFor="class">Filter by class</label>
+            <select id="class" name="class" defaultValue={classId ?? ""}>
+              <option value="">All classes</option>
+              {classes?.map((c) => <option key={c.id} value={c.id}>{c.name} - {c.section}</option>)}
+            </select>
+          </div>
+          <button className="btn ghost">Apply</button>
+          {classId && <Link className="btn ghost" href="/fees/defaulters">Clear</Link>}
         </div>
-        <button className="btn ghost">Filter</button>
       </form>
 
-      <div className="card">
-        <table>
-          <thead>
-            <tr>
-              <th>Adm. no.</th><th>Student</th><th>Class</th><th>Guardian</th>
-              <th className="num">Pending fees</th><th className="num">Overdue</th><th className="num">Total due</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.studentId}>
-                <td>{r.admissionNo}</td>
-                <td>{r.name}</td>
-                <td>{r.className}</td>
-                <td>{r.guardian || "-"}{r.phone ? ` (${r.phone})` : ""}</td>
-                <td className="num">{r.feesCount}</td>
-                <td className="num">
-                  {r.overdue > 0 ? <span className="badge bad">{inr(r.overdue)}</span> : "-"}
-                </td>
-                <td className="num"><strong>{inr(r.totalDue)}</strong></td>
+      <div className="card flush">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th><th>Class</th><th>Guardian</th>
+                <th className="num">Unpaid fees</th><th className="num">Past due date</th><th className="num">Total due</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {!rows.length && <div className="empty">Koi defaulter nahi hai. Sab fees jama hain.</div>}
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.studentId}>
+                  <td>
+                    <span className="strong">{r.name}</span>
+                    <span className="cell-sub">{r.admissionNo}</span>
+                  </td>
+                  <td>{r.className}</td>
+                  <td>
+                    {r.guardian || "-"}
+                    {r.phone && <span className="cell-sub">{r.phone}</span>}
+                  </td>
+                  <td className="num">{r.feesCount}</td>
+                  <td className="num">{r.overdue > 0 ? <span className="badge bad">{inr(r.overdue)}</span> : "-"}</td>
+                  <td className="num strong">{inr(r.totalDue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!rows.length && (
+          <div className="empty">
+            <strong>No defaulters</strong>
+            All assigned fees have been paid.
+          </div>
+        )}
       </div>
     </>
   );

@@ -3,7 +3,7 @@ import { getDefaulters } from "@/lib/defaulters";
 
 export const dynamic = "force-dynamic";
 
-// Excel mein khulne wali CSV; formula-injection se bachne ke liye = + - @ se shuru hone wale text ke aage ' lagate hain.
+// CSV that opens cleanly in Excel. Text starting with = + - @ is prefixed with a quote to prevent formula injection.
 function cell(value: string | number) {
   let s = String(value);
   if (/^[=+\-@]/.test(s) && typeof value === "string") s = "'" + s;

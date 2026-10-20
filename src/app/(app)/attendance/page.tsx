@@ -1,8 +1,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Attendance" };
 
 async function saveAttendance(formData: FormData) {
   "use server";
@@ -22,9 +24,9 @@ async function saveAttendance(formData: FormData) {
 }
 
 const options = [
-  { value: "present", label: "P", cls: "p" },
-  { value: "absent", label: "A", cls: "a" },
-  { value: "late", label: "L", cls: "l" },
+  { value: "present", label: "Present", cls: "p" },
+  { value: "absent", label: "Absent", cls: "a" },
+  { value: "late", label: "Late", cls: "l" },
   { value: "leave", label: "Leave", cls: "v" },
 ];
 
@@ -61,58 +63,76 @@ export default async function AttendancePage({
     }
   }
 
+  const marked = students.filter((s) => existing.has(s.id)).length;
+
   return (
     <>
-      <h1>Attendance</h1>
-      <p className="sub">Class aur date chunein, phir har student ki attendance mark karein</p>
+      <PageHeader title="Attendance" description="Choose a class and date, then mark each student." />
 
-      <form method="get" className="row card" style={{ marginBottom: 18 }}>
-        <div className="grow">
-          <label htmlFor="class">Class</label>
-          <select id="class" name="class" defaultValue={classId}>
-            {classes?.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
-            ))}
-          </select>
+      <form method="get" className="card toolbar">
+        <div className="row">
+          <div className="grow" style={{ maxWidth: 280 }}>
+            <label htmlFor="class">Class</label>
+            <select id="class" name="class" defaultValue={classId}>
+              {classes?.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="date">Date</label>
+            <input id="date" name="date" type="date" defaultValue={date} />
+          </div>
+          <button className="btn ghost">Load</button>
         </div>
-        <div>
-          <label htmlFor="date">Date</label>
-          <input id="date" name="date" type="date" defaultValue={date} />
-        </div>
-        <button className="btn ghost">Load</button>
       </form>
 
-      <form action={saveAttendance} className="card">
+      <form action={saveAttendance} className="card flush">
         <input type="hidden" name="date" value={date} />
-        <table>
-          <thead><tr><th>Adm. no.</th><th>Name</th><th>Status</th></tr></thead>
-          <tbody>
-            {students.map((s) => (
-              <tr key={s.id}>
-                <td>{s.admission_no}</td>
-                <td>{s.full_name}</td>
-                <td>
-                  <div className="seg">
-                    {options.map((o) => (
-                      <label key={o.value}>
-                        <input
-                          type="radio"
-                          name={`status_${s.id}`}
-                          value={o.value}
-                          defaultChecked={(existing.get(s.id) ?? "present") === o.value}
-                        />
-                        <span className={o.cls}>{o.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!students.length && <div className="empty">Is class mein koi active student nahi hai.</div>}
         {students.length > 0 && (
-          <div style={{ marginTop: 14 }}><button className="btn">Save attendance</button></div>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", color: "var(--muted)", fontSize: 13 }}>
+            {students.length} students
+            {marked > 0 ? `, attendance already saved for ${marked}` : ", attendance not saved yet for this date"}
+          </div>
+        )}
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Admission no.</th><th>Student</th><th>Status</th></tr></thead>
+            <tbody>
+              {students.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.admission_no}</td>
+                  <td className="strong">{s.full_name}</td>
+                  <td>
+                    <div className="seg">
+                      {options.map((o) => (
+                        <label key={o.value}>
+                          <input
+                            type="radio"
+                            name={`status_${s.id}`}
+                            value={o.value}
+                            defaultChecked={(existing.get(s.id) ?? "present") === o.value}
+                          />
+                          <span className={o.cls}>{o.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!students.length && (
+          <div className="empty">
+            <strong>No active students in this class</strong>
+            Assign students to this class from the Students page.
+          </div>
+        )}
+        {students.length > 0 && (
+          <div style={{ padding: 16, borderTop: "1px solid var(--border)" }}>
+            <button className="btn">Save attendance</button>
+          </div>
         )}
       </form>
     </>

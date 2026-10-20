@@ -13,7 +13,7 @@ export type Defaulter = {
   oldestDue: string | null;
 };
 
-/** Student-wise baaki fees. classId diya ho to sirf us class ke students. */
+/** Unpaid fees grouped by student. When classId is given, only students of that class. */
 export async function getDefaulters(classId?: string): Promise<Defaulter[]> {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);

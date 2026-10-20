@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, STAFF_ROLES, type Role } from "@/lib/auth";
+import NavLinks, { type NavItem } from "@/components/NavLinks";
 
 async function logout() {
   "use server";
@@ -10,55 +10,48 @@ async function logout() {
   redirect("/login");
 }
 
-const links: { href: string; label: string; roles: Role[] }[] = [
-  { href: "/", label: "Dashboard", roles: STAFF_ROLES },
-  { href: "/students", label: "Students", roles: STAFF_ROLES },
-  { href: "/attendance", label: "Attendance", roles: ["admin", "teacher"] },
-  { href: "/fees", label: "Fees", roles: ["admin", "accountant"] },
-  { href: "/exams", label: "Exams & Report Cards", roles: ["admin", "teacher"] },
-  { href: "/users", label: "Users", roles: ["admin"] },
+const links: (NavItem & { roles: Role[] })[] = [
+  { href: "/", label: "Dashboard", icon: "dashboard", roles: STAFF_ROLES },
+  { href: "/students", label: "Students", icon: "students", roles: STAFF_ROLES },
+  { href: "/attendance", label: "Attendance", icon: "attendance", roles: ["admin", "teacher"] },
+  { href: "/fees", label: "Fees", icon: "fees", roles: ["admin", "accountant"] },
+  { href: "/exams", label: "Exams", icon: "exams", roles: ["admin", "teacher"] },
+  { href: "/users", label: "Users", icon: "users", roles: ["admin"] },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const profile = await getProfile();
   const isStaff = STAFF_ROLES.includes(profile.role);
+  const items = links.filter((l) => l.roles.includes(profile.role));
 
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          Eins<span>ERP</span>
+          <img src="/logo.png" alt="EinsERP" width={148} height={26} />
         </div>
-        <nav className="nav">
-          {links
-            .filter((l) => l.roles.includes(profile.role))
-            .map((l) => (
-              <Link key={l.href} href={l.href}>
-                {l.label}
-              </Link>
-            ))}
-        </nav>
+        <NavLinks items={items} />
         <div className="spacer" />
-        <div style={{ padding: "0 10px 10px", fontSize: 13 }}>
-          <div style={{ fontWeight: 600, wordBreak: "break-all" }}>{profile.fullName || profile.email}</div>
-          <span className="badge neutral" style={{ textTransform: "capitalize" }}>{profile.role}</span>
+        <div className="side-user">
+          <div>
+            <div className="name">{profile.fullName || profile.email}</div>
+            <div className="role">{profile.role}</div>
+          </div>
+          <form action={logout}>
+            <button className="btn small">Log out</button>
+          </form>
         </div>
-        <form action={logout}>
-          <button className="btn ghost small" style={{ width: "100%", justifyContent: "center" }}>
-            Log out
-          </button>
-        </form>
       </aside>
       <main className="main">
         {isStaff ? (
           children
         ) : (
           <div className="card" style={{ maxWidth: 520 }}>
-            <h1>{profile.role === "parent" ? "Parent portal jaldi aa raha hai" : "Approval pending"}</h1>
+            <h1>{profile.role === "parent" ? "Parent portal coming soon" : "Waiting for approval"}</h1>
             <p className="sub" style={{ marginBottom: 0 }}>
               {profile.role === "parent"
-                ? "Parent portal abhi taiyar ho raha hai. Taiyar hote hi aapko yahin bachche ki attendance, fees aur result dikhenge."
-                : "Aapka account ban gaya hai, par abhi koi role assign nahi hua. School admin se role approve karwayein, phir dobara login karein."}
+                ? "The parent portal is being built. Soon you will be able to see your child's attendance, fees and results here."
+                : "Your account has been created, but no role has been assigned yet. Ask the school admin to approve your account, then log in again."}
             </p>
           </div>
         )}

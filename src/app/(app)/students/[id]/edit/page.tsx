@@ -3,8 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Edit student" };
 
 async function updateStudent(formData: FormData) {
   "use server";
@@ -53,52 +55,51 @@ export default async function EditStudentPage({
 
   return (
     <>
-      <div className="header-row">
-        <div>
-          <h1>Edit student</h1>
-          <p className="sub">{student.full_name} ({student.admission_no})</p>
-        </div>
-        <Link className="btn ghost small" href="/students">← Back to students</Link>
-      </div>
+      <PageHeader title="Edit student" description={`${student.full_name} (${student.admission_no})`}>
+        <Link className="btn ghost" href="/students">Back to students</Link>
+      </PageHeader>
 
       {error && <div className="error">{error}</div>}
 
       <form action={updateStudent} className="card">
         <input type="hidden" name="id" value={student.id} />
         <div className="form-grid">
-          <div><label>Admission no.</label><input name="admission_no" defaultValue={student.admission_no} required /></div>
-          <div><label>Full name</label><input name="full_name" defaultValue={student.full_name} required /></div>
+          <div><label htmlFor="admission_no">Admission number</label><input id="admission_no" name="admission_no" defaultValue={student.admission_no} required /></div>
+          <div><label htmlFor="full_name">Full name</label><input id="full_name" name="full_name" defaultValue={student.full_name} required /></div>
           <div>
-            <label>Class</label>
-            <select name="class_id" defaultValue={student.class_id ?? ""}>
-              <option value="">Select</option>
+            <label htmlFor="class_id">Class</label>
+            <select id="class_id" name="class_id" defaultValue={student.class_id ?? ""}>
+              <option value="">Select a class</option>
               {classes?.map((c) => (
                 <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
               ))}
             </select>
           </div>
-          <div><label>Date of birth</label><input name="dob" type="date" defaultValue={student.dob ?? ""} /></div>
+          <div><label htmlFor="dob">Date of birth</label><input id="dob" name="dob" type="date" defaultValue={student.dob ?? ""} /></div>
           <div>
-            <label>Gender</label>
-            <select name="gender" defaultValue={student.gender ?? ""}>
+            <label htmlFor="gender">Gender</label>
+            <select id="gender" name="gender" defaultValue={student.gender ?? ""}>
               <option value="">Select</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="other">Other</option>
             </select>
           </div>
-          <div><label>Guardian name</label><input name="guardian_name" defaultValue={student.guardian_name ?? ""} /></div>
-          <div><label>Guardian phone</label><input name="guardian_phone" type="tel" defaultValue={student.guardian_phone ?? ""} /></div>
-          <div><label>Address</label><input name="address" defaultValue={student.address ?? ""} /></div>
+          <div><label htmlFor="guardian_name">Guardian name</label><input id="guardian_name" name="guardian_name" defaultValue={student.guardian_name ?? ""} /></div>
+          <div><label htmlFor="guardian_phone">Guardian phone</label><input id="guardian_phone" name="guardian_phone" type="tel" defaultValue={student.guardian_phone ?? ""} /></div>
+          <div><label htmlFor="address">Address</label><input id="address" name="address" defaultValue={student.address ?? ""} /></div>
           <div>
-            <label>Status</label>
-            <select name="status" defaultValue={student.status}>
+            <label htmlFor="status">Status</label>
+            <select id="status" name="status" defaultValue={student.status}>
               <option value="active">Active</option>
               <option value="left">Left school</option>
             </select>
           </div>
         </div>
-        <div style={{ marginTop: 14 }}><button className="btn">Save changes</button></div>
+        <div className="form-actions">
+          <button className="btn">Save changes</button>
+          <Link className="btn ghost" href="/students">Cancel</Link>
+        </div>
       </form>
     </>
   );

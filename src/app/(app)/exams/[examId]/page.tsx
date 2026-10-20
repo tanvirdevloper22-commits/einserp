@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Exam marks" };
 
 async function saveMarks(formData: FormData) {
   "use server";
@@ -83,62 +85,75 @@ export default async function ExamPage({
 
   return (
     <>
-      <div className="header-row">
-        <div>
-          <h1>{exam.name}</h1>
-          <p className="sub">Subject-wise marks bharein, phir har student ka report card kholein</p>
-        </div>
-        <Link className="btn ghost small" href="/exams">← All exams</Link>
-      </div>
+      <PageHeader
+        title={exam.name}
+        description="Enter marks one subject at a time, then open a report card for any student."
+      >
+        <Link className="btn ghost" href="/exams">All exams</Link>
+      </PageHeader>
 
-      <form method="get" className="row card" style={{ marginBottom: 18 }}>
-        <div className="grow">
-          <label>Class</label>
-          <select name="class" defaultValue={classId}>
-            {classes?.map((c) => <option key={c.id} value={c.id}>{c.name} - {c.section}</option>)}
-          </select>
+      <form method="get" className="card toolbar">
+        <div className="row">
+          <div className="grow" style={{ maxWidth: 260 }}>
+            <label htmlFor="class">Class</label>
+            <select id="class" name="class" defaultValue={classId}>
+              {classes?.map((c) => <option key={c.id} value={c.id}>{c.name} - {c.section}</option>)}
+            </select>
+          </div>
+          <div className="grow" style={{ maxWidth: 260 }}>
+            <label htmlFor="subject">Subject</label>
+            <select id="subject" name="subject" defaultValue={subjectId}>
+              {subjects?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <button className="btn ghost">Load</button>
         </div>
-        <div className="grow">
-          <label>Subject</label>
-          <select name="subject" defaultValue={subjectId}>
-            {subjects?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-        </div>
-        <button className="btn ghost">Load</button>
       </form>
 
-      <form action={saveMarks} className="card">
+      <form action={saveMarks} className="card flush">
         <input type="hidden" name="exam_id" value={examId} />
         <input type="hidden" name="subject_id" value={subjectId ?? ""} />
-        <div style={{ maxWidth: 160, marginBottom: 14 }}>
-          <label>Max marks</label>
-          <input name="max_marks" type="number" min="1" defaultValue={maxDefault} />
+        <div style={{ padding: 16, borderBottom: "1px solid var(--border)", maxWidth: 220 }}>
+          <label htmlFor="max_marks">Maximum marks</label>
+          <input id="max_marks" name="max_marks" type="number" min="1" defaultValue={maxDefault} />
         </div>
-        <table>
-          <thead><tr><th>Adm. no.</th><th>Name</th><th style={{ width: 140 }}>Marks</th><th /></tr></thead>
-          <tbody>
-            {students.map((s) => (
-              <tr key={s.id}>
-                <td>{s.admission_no}</td>
-                <td>{s.full_name}</td>
-                <td>
-                  <input
-                    name={`marks_${s.id}`}
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    defaultValue={existing.get(s.id)?.marks_obtained ?? ""}
-                  />
-                </td>
-                <td className="num">
-                  <Link className="btn ghost small" href={`/exams/${examId}/report/${s.id}`}>Report card</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!students.length && <div className="empty">Is class mein koi active student nahi hai.</div>}
-        {students.length > 0 && <div style={{ marginTop: 14 }}><button className="btn">Save marks</button></div>}
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Admission no.</th><th>Student</th><th style={{ width: 160 }}>Marks</th><th /></tr></thead>
+            <tbody>
+              {students.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.admission_no}</td>
+                  <td className="strong">{s.full_name}</td>
+                  <td>
+                    <input
+                      name={`marks_${s.id}`}
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      aria-label={`Marks for ${s.full_name}`}
+                      defaultValue={existing.get(s.id)?.marks_obtained ?? ""}
+                    />
+                  </td>
+                  <td className="num">
+                    <Link className="btn ghost small" href={`/exams/${examId}/report/${s.id}`}>Report card</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!students.length && (
+          <div className="empty">
+            <strong>No active students in this class</strong>
+            Pick another class, or assign students to this one first.
+          </div>
+        )}
+        {students.length > 0 && (
+          <div style={{ padding: 16, borderTop: "1px solid var(--border)" }}>
+            <button className="btn">Save marks</button>
+          </div>
+        )}
       </form>
     </>
   );

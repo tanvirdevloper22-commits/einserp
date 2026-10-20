@@ -2,8 +2,10 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole, STAFF_ROLES } from "@/lib/auth";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Students" };
 
 async function addStudent(formData: FormData) {
   "use server";
@@ -51,14 +53,48 @@ export default async function StudentsPage({
 
   return (
     <>
-      <div className="header-row">
-        <div>
-          <h1>Students</h1>
-          <p className="sub">Admission aur student records</p>
-        </div>
-        <form className="row" method="get">
-          <div>
-            <label htmlFor="class">Class</label>
+      <PageHeader
+        title="Students"
+        description={isAdmin ? "Admit new students and manage existing records." : "Student records by class."}
+      />
+
+      {isAdmin && (
+        <form action={addStudent} className="card" style={{ marginBottom: 24 }}>
+          <h2>New admission</h2>
+          <div className="form-grid">
+            <div><label htmlFor="admission_no">Admission number</label><input id="admission_no" name="admission_no" required /></div>
+            <div><label htmlFor="full_name">Full name</label><input id="full_name" name="full_name" required /></div>
+            <div>
+              <label htmlFor="class_id">Class</label>
+              <select id="class_id" name="class_id" defaultValue="">
+                <option value="">Select a class</option>
+                {classes?.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
+                ))}
+              </select>
+            </div>
+            <div><label htmlFor="dob">Date of birth</label><input id="dob" name="dob" type="date" /></div>
+            <div>
+              <label htmlFor="gender">Gender</label>
+              <select id="gender" name="gender" defaultValue="">
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div><label htmlFor="guardian_name">Guardian name</label><input id="guardian_name" name="guardian_name" /></div>
+            <div><label htmlFor="guardian_phone">Guardian phone</label><input id="guardian_phone" name="guardian_phone" type="tel" /></div>
+            <div><label htmlFor="address">Address</label><input id="address" name="address" /></div>
+          </div>
+          <div className="form-actions"><button className="btn">Add student</button></div>
+        </form>
+      )}
+
+      <form className="card toolbar" method="get">
+        <div className="row">
+          <div className="grow" style={{ maxWidth: 280 }}>
+            <label htmlFor="class">Filter by class</label>
             <select id="class" name="class" defaultValue={classFilter ?? ""}>
               <option value="">All classes</option>
               {classes?.map((c) => (
@@ -66,75 +102,56 @@ export default async function StudentsPage({
               ))}
             </select>
           </div>
-          <button className="btn ghost">Filter</button>
-        </form>
-      </div>
-
-      {isAdmin && (
-      <form action={addStudent} className="card" style={{ marginBottom: 18 }}>
-        <h2>New admission</h2>
-        <div className="form-grid">
-          <div><label>Admission no.</label><input name="admission_no" required /></div>
-          <div><label>Full name</label><input name="full_name" required /></div>
-          <div>
-            <label>Class</label>
-            <select name="class_id" defaultValue="">
-              <option value="">Select</option>
-              {classes?.map((c) => (
-                <option key={c.id} value={c.id}>{c.name} - {c.section}</option>
-              ))}
-            </select>
-          </div>
-          <div><label>Date of birth</label><input name="dob" type="date" /></div>
-          <div>
-            <label>Gender</label>
-            <select name="gender" defaultValue="">
-              <option value="">Select</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div><label>Guardian name</label><input name="guardian_name" /></div>
-          <div><label>Guardian phone</label><input name="guardian_phone" type="tel" /></div>
-          <div><label>Address</label><input name="address" /></div>
+          <button className="btn ghost">Apply</button>
+          {classFilter && <Link className="btn ghost" href="/students">Clear</Link>}
         </div>
-        <div style={{ marginTop: 14 }}><button className="btn">Add student</button></div>
       </form>
-      )}
 
-      <div className="card">
-        <table>
-          <thead>
-            <tr><th>Adm. no.</th><th>Name</th><th>Class</th><th>Guardian</th><th>Status</th><th /></tr>
-          </thead>
-          <tbody>
-            {students?.map((s) => {
-              const cls = Array.isArray(s.classes) ? s.classes[0] : s.classes;
-              return (
-                <tr key={s.id}>
-                  <td>{s.admission_no}</td>
-                  <td>{s.full_name}</td>
-                  <td>{cls ? `${cls.name} - ${cls.section}` : "-"}</td>
-                  <td>{s.guardian_name ?? "-"}{s.guardian_phone ? ` (${s.guardian_phone})` : ""}</td>
-                  <td><span className={`badge ${s.status === "active" ? "ok" : "neutral"}`}>{s.status}</span></td>
-                  <td className="num">
+      <div className="card flush">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Admission no.</th><th>Student</th><th>Class</th><th>Guardian</th><th>Status</th>
+                {isAdmin && <th />}
+              </tr>
+            </thead>
+            <tbody>
+              {students?.map((s) => {
+                const cls = Array.isArray(s.classes) ? s.classes[0] : s.classes;
+                return (
+                  <tr key={s.id}>
+                    <td>{s.admission_no}</td>
+                    <td className="strong">{s.full_name}</td>
+                    <td>{cls ? `${cls.name} - ${cls.section}` : "Not assigned"}</td>
+                    <td>
+                      {s.guardian_name ?? "-"}
+                      {s.guardian_phone && <span className="cell-sub">{s.guardian_phone}</span>}
+                    </td>
+                    <td><span className={`badge ${s.status === "active" ? "ok" : "neutral"}`}>{s.status === "active" ? "Active" : "Left"}</span></td>
                     {isAdmin && (
-                      <div className="row" style={{ justifyContent: "flex-end", gap: 6 }}>
-                        <Link className="btn ghost small" href={`/students/${s.id}/edit`}>Edit</Link>
-                        <form action={removeStudent}>
-                          <input type="hidden" name="id" value={s.id} />
-                          <button className="btn ghost small">Delete</button>
-                        </form>
-                      </div>
+                      <td>
+                        <div className="row tight" style={{ justifyContent: "flex-end" }}>
+                          <Link className="btn ghost small" href={`/students/${s.id}/edit`}>Edit</Link>
+                          <form action={removeStudent}>
+                            <input type="hidden" name="id" value={s.id} />
+                            <button className="btn danger small">Delete</button>
+                          </form>
+                        </div>
+                      </td>
                     )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {!students?.length && <div className="empty">Koi student nahi mila. Upar se admission add karein.</div>}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {!students?.length && (
+          <div className="empty">
+            <strong>No students found</strong>
+            {isAdmin ? "Add the first admission using the form above." : "Students will appear here once they are admitted."}
+          </div>
+        )}
       </div>
     </>
   );

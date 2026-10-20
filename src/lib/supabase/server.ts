@@ -19,7 +19,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Server Component se call hone par ignore (middleware session refresh karta hai)
+            // Called from a Server Component, where cookies are read-only. Safe to ignore: middleware refreshes the session.
           }
         },
       },

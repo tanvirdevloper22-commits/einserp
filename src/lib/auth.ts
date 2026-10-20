@@ -26,7 +26,7 @@ export async function getProfile() {
   };
 }
 
-/** Page ya action ko sirf diye gaye roles tak seemit karta hai; baaki ko dashboard par bhej deta hai. */
+/** Restricts a page or action to the given roles; anyone else is redirected to the dashboard. */
 export async function requireRole(roles: Role[]) {
   const profile = await getProfile();
   if (!roles.includes(profile.role)) redirect("/");

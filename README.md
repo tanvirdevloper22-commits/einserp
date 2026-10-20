@@ -55,3 +55,7 @@ Naya user Supabase Dashboard se banayein; wo `pending` rahega jab tak admin **Us
 `supabase/003_fee_structure.sql` ko SQL Editor mein run karein (002 ke baad).
 Fees → **Fee structure** se class-wise fee items set karein aur ek click mein poori class par generate karein.
 Fees → **Defaulters** se baaki fees ki list aur CSV download milti hai.
+
+## UI
+
+Font: Geist (bundled through the `geist` npm package, no external font request). All interface text is English.

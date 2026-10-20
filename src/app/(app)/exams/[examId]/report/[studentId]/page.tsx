@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PrintButton from "@/components/PrintButton";
+import PageHeader from "@/components/PageHeader";
 import { requireRole } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Report card" };
 
 function grade(pct: number) {
   if (pct >= 90) return "A+";
@@ -55,47 +57,53 @@ export default async function ReportCard({
 
   return (
     <>
-      <div className="header-row no-print">
-        <Link className="btn ghost small" href={`/exams/${examId}`}>← Back to marks</Link>
+      <PageHeader title="Report card" description={exam.name}>
+        <Link className="btn ghost" href={`/exams/${examId}`}>Back to marks</Link>
         <PrintButton />
-      </div>
-      <div className="card">
-        <h1>Report card</h1>
-        <p className="sub">{exam.name}</p>
-        <div className="form-grid" style={{ marginBottom: 18 }}>
-          <div><strong>Name:</strong> {student.full_name}</div>
-          <div><strong>Adm. no.:</strong> {student.admission_no}</div>
-          <div><strong>Class:</strong> {cls ? `${cls.name} - ${cls.section}` : "-"}</div>
-          <div><strong>Guardian:</strong> {student.guardian_name ?? "-"}</div>
+      </PageHeader>
+
+      <div className="card" style={{ maxWidth: 820 }}>
+        <div className="form-grid" style={{ marginBottom: 20 }}>
+          <div><span className="cell-sub">Student</span><strong>{student.full_name}</strong></div>
+          <div><span className="cell-sub">Admission number</span><strong>{student.admission_no}</strong></div>
+          <div><span className="cell-sub">Class</span><strong>{cls ? `${cls.name} - ${cls.section}` : "Not assigned"}</strong></div>
+          <div><span className="cell-sub">Guardian</span><strong>{student.guardian_name ?? "-"}</strong></div>
         </div>
-        <table>
-          <thead>
-            <tr><th>Subject</th><th className="num">Marks</th><th className="num">Out of</th><th className="num">%</th><th>Grade</th></tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.subject}>
-                <td>{r.subject}</td>
-                <td className="num">{r.got}</td>
-                <td className="num">{r.max}</td>
-                <td className="num">{r.pct.toFixed(1)}</td>
-                <td><span className={`badge ${r.pct >= 40 ? "ok" : "bad"}`}>{grade(r.pct)}</span></td>
-              </tr>
-            ))}
-          </tbody>
-          {rows.length > 0 && (
-            <tfoot>
-              <tr>
-                <td><strong>Total</strong></td>
-                <td className="num"><strong>{totalGot}</strong></td>
-                <td className="num"><strong>{totalMax}</strong></td>
-                <td className="num"><strong>{overall.toFixed(1)}</strong></td>
-                <td><span className={`badge ${overall >= 40 ? "ok" : "bad"}`}>{grade(overall)}</span></td>
-              </tr>
-            </tfoot>
-          )}
-        </table>
-        {!rows.length && <div className="empty">Is exam ke liye abhi marks nahi bhare gaye.</div>}
+
+        {rows.length > 0 ? (
+          <div className="table-wrap" style={{ border: "1px solid var(--border)", borderRadius: 8 }}>
+            <table>
+              <thead>
+                <tr><th>Subject</th><th className="num">Marks</th><th className="num">Out of</th><th className="num">Percentage</th><th>Grade</th></tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.subject}>
+                    <td className="strong">{r.subject}</td>
+                    <td className="num">{r.got}</td>
+                    <td className="num">{r.max}</td>
+                    <td className="num">{r.pct.toFixed(1)}%</td>
+                    <td><span className={`badge ${r.pct >= 40 ? "ok" : "bad"}`}>{grade(r.pct)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td className="strong">Total</td>
+                  <td className="num strong">{totalGot}</td>
+                  <td className="num strong">{totalMax}</td>
+                  <td className="num strong">{overall.toFixed(1)}%</td>
+                  <td><span className={`badge ${overall >= 40 ? "ok" : "bad"}`}>{grade(overall)}</span></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        ) : (
+          <div className="empty">
+            <strong>No marks entered</strong>
+            Marks for this student have not been entered for this exam yet.
+          </div>
+        )}
       </div>
     </>
   );
