@@ -48,7 +48,9 @@ Timetable, teacher/staff aur salary, parent portal, SMS/WhatsApp fee reminders, 
 ## Roles (migration 002)
 
 `supabase/002_roles.sql` ko SQL Editor mein run karein. Roles: `admin`, `accountant`, `teacher`, `parent`.
-Naya user Supabase Dashboard se banayein; wo `pending` rahega jab tak admin **Users** page se role na de.
+Admins create users from the **Users** page (name, email, password, role); no Supabase dashboard needed.
+This requires the server-only env var `SUPABASE_SERVICE_ROLE_KEY` (Supabase -> Project Settings -> API -> `service_role`).
+Add it in Vercel (Settings -> Environment Variables) and in `.env.local`, and never commit it.
 
 ## Fee structure (migration 003)
 
@@ -59,3 +61,9 @@ Fees → **Defaulters** se baaki fees ki list aur CSV download milti hai.
 ## UI
 
 Font: Geist (bundled through the `geist` npm package, no external font request). All interface text is English.
+
+## Settings, invoices and UPI QR (migration 004)
+
+Run `supabase/004_settings_invoices.sql` in the SQL Editor (after 002 and 003). It adds the `school_settings` table and a running invoice number on every fee.
+Then open **Settings** (admin only) and enter the school details and UPI ID. Fee invoices (**Fees -> Invoice**) show a QR code for the balance due.
+The app cannot see when a UPI payment arrives. After confirming the money in your bank or UPI app, record the payment on the Fees page.

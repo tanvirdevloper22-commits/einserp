@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, hasServiceRoleKey } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
 
@@ -7,6 +9,10 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Users" };
 
 const ROLES = ["pending", "admin", "accountant", "teacher", "parent"] as const;
+const ASSIGNABLE = ["admin", "accountant", "teacher", "parent"] as const;
+const MIN_PASSWORD = 8;
+
+const fail = (message: string): never => redirect(`/users?error=${encodeURIComponent(message)}`);
 
 async function updateUser(formData: FormData) {
   "use server";
@@ -25,8 +31,67 @@ async function updateUser(formData: FormData) {
   revalidatePath("/users");
 }
 
-export default async function UsersPage() {
+async function createUser(formData: FormData) {
+  "use server";
+  await requireRole(["admin"]);
+  if (!hasServiceRoleKey()) {
+    fail("The server is missing SUPABASE_SERVICE_ROLE_KEY. Add it in Vercel under Settings, Environment Variables, then redeploy.");
+  }
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const role = String(formData.get("role") ?? "");
+
+  if (!email) fail("Enter an email address.");
+  if (!ASSIGNABLE.includes(role as (typeof ASSIGNABLE)[number])) fail("Choose a role for the new user.");
+  if (password.length < MIN_PASSWORD) fail(`The password must be at least ${MIN_PASSWORD} characters.`);
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
+  });
+  if (error || !data.user) fail(error?.message ?? "The user could not be created.");
+
+  // A database trigger already added a "pending" profile; set the real role and name.
+  const { error: profileError } = await admin
+    .from("profiles")
+    .upsert({ id: data.user!.id, email, full_name: fullName, role });
+  if (profileError) fail(`The account was created, but its role could not be saved: ${profileError.message}`);
+
+  revalidatePath("/users");
+  redirect(`/users?created=${encodeURIComponent(email)}`);
+}
+
+async function resetPassword(formData: FormData) {
+  "use server";
+  await requireRole(["admin"]);
+  if (!hasServiceRoleKey()) {
+    fail("The server is missing SUPABASE_SERVICE_ROLE_KEY. Add it in Vercel under Settings, Environment Variables, then redeploy.");
+  }
+
+  const id = String(formData.get("id") ?? "");
+  const password = String(formData.get("password") ?? "");
+  if (!id) fail("Choose a user.");
+  if (password.length < MIN_PASSWORD) fail(`The password must be at least ${MIN_PASSWORD} characters.`);
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(id, { password });
+  if (error) fail(error.message);
+
+  redirect("/users?reset=1");
+}
+
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; created?: string; reset?: string }>;
+}) {
   const me = await requireRole(["admin"]);
+  const sp = await searchParams;
   const supabase = await createClient();
   const { data: users } = await supabase
     .from("profiles")
@@ -34,15 +99,70 @@ export default async function UsersPage() {
     .order("created_at", { ascending: false });
 
   const pendingCount = (users ?? []).filter((u) => u.role === "pending").length;
+  const keyMissing = !hasServiceRoleKey();
 
   return (
     <>
       <PageHeader
         title="Users"
-        description="Create accounts in Supabase under Authentication, then assign each person a role here."
+        description="Create staff accounts, assign roles and reset passwords."
       >
         {pendingCount > 0 && <span className="badge warn">{pendingCount} waiting for a role</span>}
       </PageHeader>
+
+      {sp.error && <div className="error">{sp.error}</div>}
+      {sp.created && <div className="notice ok">Account created for {sp.created}. Share the email and password with them so they can log in.</div>}
+      {sp.reset && <div className="notice ok">Password updated.</div>}
+      {keyMissing && (
+        <div className="notice info">
+          Creating users and resetting passwords needs the <strong>SUPABASE_SERVICE_ROLE_KEY</strong> environment
+          variable on the server. Add it in Vercel under Settings, Environment Variables, then redeploy.
+        </div>
+      )}
+
+      <div className="grid two">
+        <form action={createUser} className="card">
+          <h2>Add a user</h2>
+          <div className="form-grid one">
+            <div><label htmlFor="new_name">Full name</label><input id="new_name" name="full_name" required /></div>
+            <div><label htmlFor="new_email">Email</label><input id="new_email" name="email" type="email" autoComplete="off" required /></div>
+            <div>
+              <label htmlFor="new_password">Password</label>
+              <input id="new_password" name="password" type="text" minLength={MIN_PASSWORD} autoComplete="off" required />
+              <span className="cell-sub" style={{ marginTop: 4 }}>At least {MIN_PASSWORD} characters. Share it with the user directly.</span>
+            </div>
+            <div>
+              <label htmlFor="new_role">Role</label>
+              <select id="new_role" name="role" defaultValue="" required style={{ textTransform: "capitalize" }}>
+                <option value="" disabled>Select a role</option>
+                {ASSIGNABLE.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-actions"><button className="btn" disabled={keyMissing}>Create user</button></div>
+        </form>
+
+        <form action={resetPassword} className="card">
+          <h2>Reset a password</h2>
+          <div className="form-grid one">
+            <div>
+              <label htmlFor="reset_user">User</label>
+              <select id="reset_user" name="id" defaultValue="" required>
+                <option value="" disabled>Select a user</option>
+                {users?.map((u) => (
+                  <option key={u.id} value={u.id}>{u.full_name ? `${u.full_name} (${u.email})` : u.email}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="reset_password">New password</label>
+              <input id="reset_password" name="password" type="text" minLength={MIN_PASSWORD} autoComplete="off" required />
+              <span className="cell-sub" style={{ marginTop: 4 }}>At least {MIN_PASSWORD} characters.</span>
+            </div>
+          </div>
+          <div className="form-actions"><button className="btn ghost" disabled={keyMissing}>Update password</button></div>
+        </form>
+      </div>
 
       <div className="card flush">
         <div className="table-wrap">
@@ -83,7 +203,7 @@ export default async function UsersPage() {
         {!users?.length && (
           <div className="empty">
             <strong>No users yet</strong>
-            Accounts appear here after they are created in Supabase.
+            Add the first user using the form above.
           </div>
         )}
       </div>

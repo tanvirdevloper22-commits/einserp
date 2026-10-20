@@ -17,6 +17,7 @@ const links: (NavItem & { roles: Role[] })[] = [
   { href: "/fees", label: "Fees", icon: "fees", roles: ["admin", "accountant"] },
   { href: "/exams", label: "Exams", icon: "exams", roles: ["admin", "teacher"] },
   { href: "/users", label: "Users", icon: "users", roles: ["admin"] },
+  { href: "/settings", label: "Settings", icon: "settings", roles: ["admin"] },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

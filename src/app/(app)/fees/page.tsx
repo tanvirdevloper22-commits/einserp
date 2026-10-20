@@ -1,11 +1,20 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { todayISO, formatDate } from "@/lib/dates";
 import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Fees" };
+
+const MODES = ["cash", "upi", "bank", "cheque"];
+const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+function fail(message: string): never {
+  return redirect(`/fees?error=${encodeURIComponent(message)}`);
+}
 
 async function addFee(formData: FormData) {
   "use server";
@@ -13,51 +22,71 @@ async function addFee(formData: FormData) {
   const supabase = await createClient();
   const classId = String(formData.get("class_id") ?? "");
   const studentId = String(formData.get("student_id") ?? "");
-  const base = {
-    title: String(formData.get("title")).trim(),
-    amount: Number(formData.get("amount")),
-    due_date: String(formData.get("due_date") ?? "") || null,
-  };
+  const title = String(formData.get("title") ?? "").trim();
+  const amount = Number(formData.get("amount"));
+  const dueDate = String(formData.get("due_date") ?? "") || null;
 
-  // If a student is chosen the fee goes to that student only, otherwise to the whole class.
+  if (!title) fail("Enter a fee title.");
+  if (!(amount > 0)) fail("Enter an amount greater than zero.");
+  if (!studentId && !classId) fail("Select a student, or select a class to assign the fee to everyone in it.");
+
+  // A chosen student gets the fee alone; otherwise every active student in the class does.
   let studentIds: string[] = [];
   if (studentId) {
     studentIds = [studentId];
-  } else if (classId) {
-    const { data } = await supabase
+  } else {
+    const { data, error } = await supabase
       .from("students")
       .select("id")
       .eq("class_id", classId)
       .eq("status", "active");
+    if (error) fail(`Could not load the class: ${error.message}`);
     studentIds = (data ?? []).map((s) => s.id);
+    if (!studentIds.length) fail("That class has no active students.");
   }
-  if (studentIds.length) {
-    await supabase.from("fees").insert(studentIds.map((id) => ({ ...base, student_id: id })));
-  }
+
+  const { error } = await supabase
+    .from("fees")
+    .insert(studentIds.map((id) => ({ student_id: id, title, amount, due_date: dueDate })));
+  if (error) fail(`The fee could not be saved: ${error.message}`);
+
   revalidatePath("/fees");
+  redirect(`/fees?assigned=${studentIds.length}`);
 }
 
 async function recordPayment(formData: FormData) {
   "use server";
   await requireRole(["admin", "accountant"]);
   const supabase = await createClient();
-  await supabase.from("payments").insert({
-    fee_id: String(formData.get("fee_id")),
-    amount: Number(formData.get("amount")),
-    mode: String(formData.get("mode")),
-  });
-  revalidatePath("/fees");
-}
+  const feeId = String(formData.get("fee_id") ?? "");
+  const amount = Math.round(Number(formData.get("amount")) * 100) / 100;
+  const mode = String(formData.get("mode") ?? "");
 
-const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
+  if (!feeId) fail("Choose a fee.");
+  if (!(amount > 0)) fail("Enter a payment amount greater than zero.");
+  if (!MODES.includes(mode)) fail("Choose a payment mode.");
+
+  const { data: balance } = await supabase.from("fee_balances").select("due").eq("fee_id", feeId).maybeSingle();
+  if (!balance) fail("This fee could not be found.");
+  const due = Number(balance!.due);
+  if (amount > due + 0.005) fail(`The amount is more than the balance due (${inr(due)}).`);
+
+  const { error } = await supabase.from("payments").insert({ fee_id: feeId, amount, mode, paid_on: todayISO() });
+  if (error) fail(`The payment could not be saved: ${error.message}`);
+
+  revalidatePath("/fees");
+  revalidatePath("/fees/payments");
+  redirect(`/fees?paid=${amount}&fee=${feeId}`);
+}
 
 export default async function FeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pending?: string }>;
+  searchParams: Promise<{ pending?: string; error?: string; paid?: string; fee?: string; assigned?: string }>;
 }) {
   await requireRole(["admin", "accountant"]);
-  const { pending } = await searchParams;
+  const sp = await searchParams;
+  const pending = sp.pending;
   const supabase = await createClient();
 
   const [{ data: classes }, { data: students }, { data: balances }] = await Promise.all([
@@ -71,10 +100,22 @@ export default async function FeesPage({
 
   return (
     <>
-      <PageHeader title="Fees" description="Assign fees, collect payments and print receipts.">
+      <PageHeader title="Fees" description="Assign fees, collect payments and share invoices.">
+        <Link className="btn ghost" href="/fees/payments">Payments</Link>
         <Link className="btn ghost" href="/fees/structure">Fee structure</Link>
         <Link className="btn ghost" href="/fees/defaulters">Defaulters</Link>
       </PageHeader>
+
+      {sp.error && <div className="error">{sp.error}</div>}
+      {sp.paid && (
+        <div className="notice ok">
+          Payment of {inr(Number(sp.paid))} recorded.
+          {sp.fee && <> <Link href={`/fees/invoice/${sp.fee}`} style={{ textDecoration: "underline", fontWeight: 600 }}>View invoice</Link></>}
+        </div>
+      )}
+      {sp.assigned && (
+        <div className="notice ok">Fee assigned to {sp.assigned} {Number(sp.assigned) === 1 ? "student" : "students"}.</div>
+      )}
 
       <form action={addFee} className="card" style={{ marginBottom: 24 }}>
         <h2>Assign a fee</h2>
@@ -98,7 +139,7 @@ export default async function FeesPage({
             </select>
           </div>
           <div><label htmlFor="title">Fee title</label><input id="title" name="title" placeholder="Tuition - Oct 2026" required /></div>
-          <div><label htmlFor="amount">Amount (₹)</label><input id="amount" name="amount" type="number" min="0" step="0.01" required /></div>
+          <div><label htmlFor="amount">Amount (₹)</label><input id="amount" name="amount" type="number" min="1" step="0.01" required /></div>
           <div><label htmlFor="due_date">Due date</label><input id="due_date" name="due_date" type="date" /></div>
         </div>
         <div className="form-actions"><button className="btn">Assign fee</button></div>
@@ -119,7 +160,7 @@ export default async function FeesPage({
               <tr>
                 <th>Student</th><th>Fee</th><th>Due date</th>
                 <th className="num">Amount</th><th className="num">Paid</th><th className="num">Balance</th>
-                <th>Collect payment</th>
+                <th>Collect payment</th><th />
               </tr>
             </thead>
             <tbody>
@@ -133,7 +174,7 @@ export default async function FeesPage({
                       {stu && <span className="cell-sub">{stu.no}</span>}
                     </td>
                     <td>{b.title}</td>
-                    <td>{b.due_date ?? "-"}</td>
+                    <td>{formatDate(b.due_date)}</td>
                     <td className="num">{inr(Number(b.amount))}</td>
                     <td className="num">{inr(Number(b.paid))}</td>
                     <td className="num">
@@ -143,7 +184,7 @@ export default async function FeesPage({
                       {due > 0 ? (
                         <form action={recordPayment} className="row tight">
                           <input type="hidden" name="fee_id" value={b.fee_id} />
-                          <input name="amount" type="number" min="1" max={due} step="0.01" defaultValue={due} style={{ width: 100 }} aria-label="Payment amount" required />
+                          <input name="amount" type="number" min="0.01" max={due} step="0.01" defaultValue={due} style={{ width: 100 }} aria-label="Payment amount" required />
                           <select name="mode" style={{ width: 90 }} defaultValue="cash" aria-label="Payment mode">
                             <option value="cash">Cash</option>
                             <option value="upi">UPI</option>
@@ -153,8 +194,11 @@ export default async function FeesPage({
                           <button className="btn small">Record</button>
                         </form>
                       ) : (
-                        <Link className="btn ghost small" href={`/fees/receipts/${b.fee_id}`}>View receipt</Link>
+                        <span style={{ color: "var(--muted)" }}>Fully paid</span>
                       )}
+                    </td>
+                    <td className="num">
+                      <Link className="btn ghost small" href={`/fees/invoice/${b.fee_id}`}>Invoice</Link>
                     </td>
                   </tr>
                 );

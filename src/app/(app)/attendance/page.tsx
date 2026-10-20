@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
+import { todayISO } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Attendance" };
@@ -37,7 +38,7 @@ export default async function AttendancePage({
 }) {
   await requireRole(["admin", "teacher"]);
   const sp = await searchParams;
-  const date = sp.date ?? new Date().toISOString().slice(0, 10);
+  const date = sp.date ?? todayISO();
   const supabase = await createClient();
 
   const { data: classes } = await supabase.from("classes").select("*").order("name");

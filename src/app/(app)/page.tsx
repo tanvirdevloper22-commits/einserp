@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
+import { todayISO } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
@@ -12,7 +13,7 @@ export default async function Dashboard() {
   // No requireRole here: a wrong-role redirect lands on this page, so guarding it would loop.
   const { role, fullName } = await getProfile();
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   const showAttendance = role === "admin" || role === "teacher";
   const showFees = role === "admin" || role === "accountant";
