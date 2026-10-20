@@ -67,3 +67,10 @@ Font: Geist (bundled through the `geist` npm package, no external font request).
 Run `supabase/004_settings_invoices.sql` in the SQL Editor (after 002 and 003). It adds the `school_settings` table and a running invoice number on every fee.
 Then open **Settings** (admin only) and enter the school details and UPI ID. Fee invoices (**Fees -> Invoice**) show a QR code for the balance due.
 The app cannot see when a UPI payment arrives. After confirming the money in your bank or UPI app, record the payment on the Fees page.
+
+## Admission form, photo and ID proof (migration 005)
+
+Run `supabase/005_admission_files.sql` in the SQL Editor (after 002). It adds the extra student fields (father, mother, email,
+alternate phone, blood group, previous school, admission date, ID proof type and number) and a private storage bucket
+`student-files` (5 MB per file, images and PDF). Admins can see everything; accountants and teachers can only see photos, never ID proofs.
+Use **Students -> New admission**. After saving, the printable admission form opens with signature lines for the student and the parent or guardian.
