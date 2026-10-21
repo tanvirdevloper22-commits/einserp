@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings";
 import { buildUpiLink, upiQrDataUrl } from "@/lib/upi";
 import { formatDate, todayISO } from "@/lib/dates";
 import PrintButton from "@/components/PrintButton";
+import { withRunningBalance } from "@/lib/receipts";
 import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
@@ -27,10 +28,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ feeId:
   if (!fee) notFound();
 
   const [{ data: payments }, settings] = await Promise.all([
-    supabase.from("payments").select("*").eq("fee_id", feeId).order("created_at"),
+    supabase.from("payments").select("*").eq("fee_id", feeId),
     getSettings(),
   ]);
 
+  const history = withRunningBalance(Number(fee.amount), payments ?? []);
   const student = one(fee.students);
   const cls = student ? one(student.classes) : null;
 
@@ -109,14 +111,15 @@ export default async function InvoicePage({ params }: { params: Promise<{ feeId:
             <h2>Payments received</h2>
             <div className="table-wrap" style={{ border: "1px solid var(--border)", borderRadius: 8 }}>
               <table>
-                <thead><tr><th>Receipt no.</th><th>Date</th><th>Mode</th><th className="num">Amount</th></tr></thead>
+                <thead><tr><th>Receipt no.</th><th>Date</th><th>Mode</th><th className="num">Amount</th><th className="num">Balance after</th></tr></thead>
                 <tbody>
-                  {payments?.map((p) => (
+                  {history.map((p) => (
                     <tr key={p.id}>
-                      <td>#{p.receipt_no}</td>
+                      <td><Link href={`/fees/receipt/${p.id}`} style={{ textDecoration: "underline" }}>#{p.receipt_no}</Link></td>
                       <td>{formatDate(p.paid_on)}</td>
                       <td style={{ textTransform: "uppercase" }}>{p.mode}</td>
                       <td className="num">{inr(Number(p.amount))}</td>
+                      <td className="num">{inr(p.balanceAfter)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -387,12 +387,12 @@ textarea { resize: vertical; }
 }
 .idc-blank { width: 54mm; height: 86mm; }
 .idc-head {
-  background: #121f2f; color: #fff; height: 17mm; padding: 1.5mm 2mm; flex: none;
-  display: flex; align-items: center; justify-content: center; gap: 1.8mm;
+  background: #fff; color: #121f2f; height: 17mm; padding: 1.5mm 2.5mm; flex: none; border-bottom: 0.25mm solid #e1e5ec;
+  display: flex; align-items: center; justify-content: center; gap: 2mm;
 }
-/* The logo box follows the logo's shape: a square crest stays compact, a wide logo gets up to ~16 mm of width. */
-.idc-logo { flex: none; min-width: 10.5mm; height: 10.8mm; background: #fff; border-radius: 1.6mm; display: flex; align-items: center; justify-content: center; padding: 0.7mm; }
-.idc-logo img { height: 9.4mm; width: auto; max-width: 14.6mm; object-fit: contain; display: block; }
+/* The logo sits directly on white: a square crest stays compact, a wide logo gets up to ~15 mm of width. */
+.idc-logo { flex: none; display: flex; align-items: center; justify-content: center; }
+.idc-logo img { height: 11mm; width: auto; max-width: 15mm; object-fit: contain; display: block; }
 .idc-school {
   flex: 1; text-align: center; font-size: 7pt; font-weight: 700; line-height: 1.15;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
@@ -416,8 +416,8 @@ textarea { resize: vertical; }
 .idc-line dd { margin: 0; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .idc-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .idc-foot {
-  margin-top: auto; flex: none; background: #036cf9; color: #fff; text-align: center;
-  font-size: 6.3pt; font-weight: 600; letter-spacing: 0.02em; padding: 1.3mm 0;
+  margin-top: auto; flex: none; text-align: center; border-top: 0.25mm solid #e1e5ec;
+  color: #036cf9; font-size: 6.3pt; font-weight: 600; letter-spacing: 0.02em; padding: 1.5mm 0;
 }
 .idc-back > :not(.idc-foot) { margin-left: 3.5mm; margin-right: 3.5mm; }
 .idc-back-title { margin-top: 4.5mm; font-size: 5.8pt; text-transform: uppercase; letter-spacing: 0.06em; color: #5b667a; font-weight: 600; }

@@ -64,7 +64,10 @@ export default async function PaymentsPage() {
                     <td>{fee?.title ?? "-"}</td>
                     <td style={{ textTransform: "uppercase" }}>{p.mode}</td>
                     <td className="num strong">{inr(Number(p.amount))}</td>
-                    <td className="num"><Link className="btn ghost small" href={`/fees/invoice/${p.fee_id}`}>Invoice</Link></td>
+                    <td className="num">
+                      <Link className="btn ghost small" href={`/fees/receipt/${p.id}`}>Receipt</Link>{" "}
+                      <Link className="btn ghost small" href={`/fees/invoice/${p.fee_id}`}>Invoice</Link>
+                    </td>
                   </tr>
                 );
               })}

@@ -71,18 +71,22 @@ async function recordPayment(formData: FormData) {
   const due = Number(balance!.due);
   if (amount > due + 0.005) fail(`The amount is more than the balance due (${inr(due)}).`);
 
-  const { error } = await supabase.from("payments").insert({ fee_id: feeId, amount, mode, paid_on: todayISO() });
-  if (error) fail(`The payment could not be saved: ${error.message}`);
+  const { data: saved, error } = await supabase
+    .from("payments")
+    .insert({ fee_id: feeId, amount, mode, paid_on: todayISO() })
+    .select("id")
+    .single();
+  if (error || !saved) fail(`The payment could not be saved: ${error?.message ?? "unknown error"}`);
 
   revalidatePath("/fees");
   revalidatePath("/fees/payments");
-  redirect(`/fees?paid=${amount}&fee=${feeId}`);
+  redirect(`/fees?paid=${amount}&fee=${feeId}&receipt=${saved!.id}`);
 }
 
 export default async function FeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pending?: string; error?: string; paid?: string; fee?: string; assigned?: string }>;
+  searchParams: Promise<{ pending?: string; error?: string; paid?: string; fee?: string; receipt?: string; assigned?: string }>;
 }) {
   await requireRole(["admin", "accountant"]);
   const sp = await searchParams;
@@ -110,6 +114,7 @@ export default async function FeesPage({
       {sp.paid && (
         <div className="notice ok">
           Payment of {inr(Number(sp.paid))} recorded.
+          {sp.receipt && <> <Link href={`/fees/receipt/${sp.receipt}`} style={{ textDecoration: "underline", fontWeight: 600 }}>View receipt</Link></>}
           {sp.fee && <> <Link href={`/fees/invoice/${sp.fee}`} style={{ textDecoration: "underline", fontWeight: 600 }}>View invoice</Link></>}
         </div>
       )}
