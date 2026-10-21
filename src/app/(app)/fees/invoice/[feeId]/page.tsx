@@ -59,12 +59,18 @@ export default async function InvoicePage({ params }: { params: Promise<{ feeId:
 
       <div className="card invoice">
         <div className="invoice-top">
-          <div>
-            <h2>{settings.school_name}</h2>
-            {settings.address && <div className="cell-sub">{settings.address}</div>}
-            {(settings.phone || settings.email) && (
-              <div className="cell-sub">{[settings.phone, settings.email].filter(Boolean).join("  |  ")}</div>
+          <div className="school-id">
+            {settings.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="school-logo" src={settings.logoUrl} alt="" />
             )}
+            <div>
+              <h2>{settings.school_name}</h2>
+              {settings.address && <div className="cell-sub">{settings.address}</div>}
+              {(settings.phone || settings.email) && (
+                <div className="cell-sub">{[settings.phone, settings.email].filter(Boolean).join("  |  ")}</div>
+              )}
+            </div>
           </div>
           <div className="invoice-meta">
             <div className="inv-no">{invoiceNo}</div>

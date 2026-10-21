@@ -1,8 +1,14 @@
 /**
- * Shrinks a photo in the browser before upload: phone photos are often 5 MB or more.
- * Output is always a JPEG, scaled so its longest side is at most maxSide pixels.
+ * Shrinks an image in the browser before upload: phone photos are often 5 MB or more.
+ * Output is a JPEG scaled so its longest side is at most maxSide pixels. With { png: true } the output
+ * is a PNG that keeps transparency, which is what a logo needs.
  */
-export async function compressImage(file: File, maxSide: number, quality: number): Promise<Blob> {
+export async function compressImage(
+  file: File,
+  maxSide: number,
+  quality: number,
+  options: { png?: boolean } = {}
+): Promise<Blob> {
   let bitmap: ImageBitmap;
   try {
     // createImageBitmap applies the photo's EXIF rotation in current browsers.
@@ -21,15 +27,17 @@ export async function compressImage(file: File, maxSide: number, quality: number
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("The image could not be processed in this browser.");
 
-  ctx.fillStyle = "#ffffff"; // PNG transparency becomes white instead of black
-  ctx.fillRect(0, 0, width, height);
+  if (!options.png) {
+    ctx.fillStyle = "#ffffff"; // JPEG has no transparency, so a transparent PNG becomes white instead of black
+    ctx.fillRect(0, 0, width, height);
+  }
   ctx.drawImage(bitmap, 0, 0, width, height);
   bitmap.close?.();
 
   return new Promise((resolve, reject) =>
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("The image could not be processed."))),
-      "image/jpeg",
+      options.png ? "image/png" : "image/jpeg",
       quality
     )
   );

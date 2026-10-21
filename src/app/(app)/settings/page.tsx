@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { UPI_ID_PATTERN, buildUpiLink, upiQrDataUrl } from "@/lib/upi";
 import PageHeader from "@/components/PageHeader";
+import LogoUpload from "@/components/LogoUpload";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings" };
@@ -34,9 +35,13 @@ async function saveSettings(formData: FormData) {
     upi_id: upiId || null,
     upi_name: text("upi_name") || null,
     invoice_note: text("invoice_note") || null,
+    session_label: text("session_label") || null,
     updated_at: new Date().toISOString(),
   });
   if (error) {
+    if (/session_label|logo_path/.test(error.message)) {
+      fail("The database is missing the newest settings fields. Run supabase/006_logo_idcards.sql in the Supabase SQL Editor first.");
+    }
     fail(
       error.message.includes("school_settings")
         ? "The settings table is missing. Run supabase/004_settings_invoices.sql in the Supabase SQL Editor first."
@@ -70,12 +75,21 @@ export default async function SettingsPage({
       {sp.error && <div className="error">{sp.error}</div>}
       {sp.saved && <div className="notice ok">Settings saved. New invoices will use these details.</div>}
 
+      <div style={{ marginBottom: 16 }}>
+        <LogoUpload currentUrl={s.logoUrl} />
+      </div>
+
       <form action={saveSettings} className="stack">
         <div className="card">
           <h2>School details</h2>
-          <p className="sub" style={{ marginTop: -6 }}>Shown at the top of every invoice.</p>
+          <p className="sub" style={{ marginTop: -6 }}>Shown at the top of invoices, admission forms and ID cards.</p>
           <div className="form-grid">
             <div><label htmlFor="school_name">School name</label><input id="school_name" name="school_name" defaultValue={s.school_name} required /></div>
+            <div>
+              <label htmlFor="session_label">Academic session</label>
+              <input id="session_label" name="session_label" defaultValue={s.session_label} placeholder="2026-27" />
+              <span className="cell-sub" style={{ marginTop: 4 }}>Printed on ID cards as the validity.</span>
+            </div>
             <div><label htmlFor="phone">Phone</label><input id="phone" name="phone" type="tel" defaultValue={s.phone} /></div>
             <div><label htmlFor="email">Email</label><input id="email" name="email" type="email" defaultValue={s.email} /></div>
             <div><label htmlFor="address">Address</label><input id="address" name="address" defaultValue={s.address} /></div>

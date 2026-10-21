@@ -66,11 +66,19 @@ export default async function AdmissionFormPage({
       <div className="card admission">
         <header className="af-head">
           <div>
-            <h2>{settings.school_name}</h2>
-            {settings.address && <div className="cell-sub">{settings.address}</div>}
-            {(settings.phone || settings.email) && (
-              <div className="cell-sub">{[settings.phone, settings.email].filter(Boolean).join("  |  ")}</div>
-            )}
+            <div className="school-id">
+              {settings.logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="school-logo" src={settings.logoUrl} alt="" />
+              )}
+              <div>
+                <h2>{settings.school_name}</h2>
+                {settings.address && <div className="cell-sub">{settings.address}</div>}
+                {(settings.phone || settings.email) && (
+                  <div className="cell-sub">{[settings.phone, settings.email].filter(Boolean).join("  |  ")}</div>
+                )}
+              </div>
+            </div>
             <div className="af-title">Admission form</div>
           </div>
           <div className="af-photo">

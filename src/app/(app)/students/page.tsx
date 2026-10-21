@@ -46,6 +46,7 @@ export default async function StudentsPage({
         title="Students"
         description={isAdmin ? "Admit new students and manage existing records." : "Student records by class."}
       >
+        {isAdmin && <Link className="btn ghost" href="/students/id-cards">ID cards</Link>}
         {isAdmin && <Link className="btn" href="/students/new">New admission</Link>}
       </PageHeader>
 
@@ -102,6 +103,7 @@ export default async function StudentsPage({
                       <td>
                         <div className="row tight" style={{ justifyContent: "flex-end" }}>
                           <Link className="btn ghost small" href={`/students/${s.id}/admission-form`}>Admission form</Link>
+                          <Link className="btn ghost small" href={`/students/id-cards?student=${s.id}`}>ID card</Link>
                           <Link className="btn ghost small" href={`/students/${s.id}/edit`}>Edit</Link>
                           <form action={deleteStudent}>
                             <input type="hidden" name="id" value={s.id} />

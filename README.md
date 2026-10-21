@@ -74,3 +74,12 @@ Run `supabase/005_admission_files.sql` in the SQL Editor (after 002). It adds th
 alternate phone, blood group, previous school, admission date, ID proof type and number) and a private storage bucket
 `student-files` (5 MB per file, images and PDF). Admins can see everything; accountants and teachers can only see photos, never ID proofs.
 Use **Students -> New admission**. After saving, the printable admission form opens with signature lines for the student and the parent or guardian.
+
+## School logo and ID cards (migration 006)
+
+Run `supabase/006_logo_idcards.sql` in the SQL Editor (after 004 and 005). It adds the logo and academic session fields to `school_settings`
+and a public `school-assets` bucket for the logo (admin-only upload, 1 MB limit).
+- **Settings -> School logo:** upload or replace the logo; it appears on invoices, admission forms and ID cards. A transparent PNG works best.
+- **Settings -> Academic session** (for example `2026-27`) is printed on ID cards as the validity.
+- **Students -> ID cards:** pick a class (or use the ID card button on a student) to print 54 x 86 mm cards, nine per A4 sheet, front and back.
+  For two-sided printing choose double-sided printing that flips on the long edge, so the backs line up with the fronts.
