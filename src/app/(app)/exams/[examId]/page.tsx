@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
@@ -14,29 +14,39 @@ async function saveMarks(formData: FormData) {
   const supabase = await createClient();
   const examId = String(formData.get("exam_id"));
   const subjectId = String(formData.get("subject_id"));
-  const maxMarks = Number(formData.get("max_marks")) || 100;
-  const rows: {
-    exam_id: string;
-    subject_id: string;
-    student_id: string;
-    marks_obtained: number;
-    max_marks: number;
-  }[] = [];
-  for (const [key, value] of formData.entries()) {
-    if (key.startsWith("marks_") && String(value).trim() !== "") {
-      rows.push({
-        exam_id: examId,
-        subject_id: subjectId,
-        student_id: key.slice(6),
-        marks_obtained: Math.min(Number(value), maxMarks),
-        max_marks: maxMarks,
-      });
+  const classId = String(formData.get("class_id"));
+  const maxMarks = Number(formData.get("max_marks"));
+  const back = (q: string) => redirect(`/exams/${examId}?class=${classId}&subject=${subjectId}&${q}`);
+
+  if (!subjectId) back("error=" + encodeURIComponent("Choose a subject first."));
+  if (!(maxMarks > 0)) back("error=" + encodeURIComponent("Maximum marks must be more than zero."));
+
+  const rows: { exam_id: string; subject_id: string; student_id: string; marks_obtained: number; max_marks: number }[] = [];
+  const cleared: string[] = [];
+  for (const [key, raw] of formData.entries()) {
+    if (!key.startsWith("marks_")) continue;
+    const studentId = key.slice(6);
+    const value = String(raw).trim();
+    if (value === "") {
+      cleared.push(studentId);
+      continue;
     }
+    const n = Number(value);
+    if (!Number.isFinite(n) || n < 0) back("error=" + encodeURIComponent(`"${value}" is not a valid mark.`));
+    if (n > maxMarks) back("error=" + encodeURIComponent(`A mark of ${n} is more than the maximum of ${maxMarks}. Nothing was saved.`));
+    rows.push({ exam_id: examId, subject_id: subjectId, student_id: studentId, marks_obtained: n, max_marks: maxMarks });
   }
+
   if (rows.length) {
-    await supabase.from("marks").upsert(rows, { onConflict: "exam_id,student_id,subject_id" });
+    const { error } = await supabase.from("marks").upsert(rows, { onConflict: "exam_id,student_id,subject_id" });
+    if (error) back("error=" + encodeURIComponent(`Marks could not be saved: ${error.message}`));
+  }
+  // A mark that was emptied is removed, so a wrong entry can be taken back.
+  if (cleared.length) {
+    await supabase.from("marks").delete().eq("exam_id", examId).eq("subject_id", subjectId).in("student_id", cleared);
   }
   revalidatePath(`/exams/${examId}`);
+  back(`saved=${rows.length}`);
 }
 
 export default async function ExamPage({
@@ -44,7 +54,7 @@ export default async function ExamPage({
   searchParams,
 }: {
   params: Promise<{ examId: string }>;
-  searchParams: Promise<{ class?: string; subject?: string }>;
+  searchParams: Promise<{ class?: string; subject?: string; saved?: string; error?: string }>;
 }) {
   await requireRole(["admin", "teacher"]);
   const { examId } = await params;
@@ -90,7 +100,14 @@ export default async function ExamPage({
         description="Enter marks one subject at a time, then open a report card for any student."
       >
         <Link className="btn ghost" href="/exams">All exams</Link>
+        {classId && <Link className="btn" href={`/exams/${examId}/results?class=${classId}`}>Class results</Link>}
       </PageHeader>
+
+      {sp.error && <div className="error">{sp.error}</div>}
+      {sp.saved && <div className="notice ok">Saved marks for {sp.saved} {Number(sp.saved) === 1 ? "student" : "students"}. Leave a box empty to remove a mark.</div>}
+      {!subjects?.length && (
+        <div className="notice info">No subjects yet. An admin can add them on the <Link href="/exams" style={{ textDecoration: "underline", fontWeight: 600 }}>Exams page</Link>.</div>
+      )}
 
       <form method="get" className="card toolbar">
         <div className="row">
@@ -113,9 +130,10 @@ export default async function ExamPage({
       <form action={saveMarks} className="card flush">
         <input type="hidden" name="exam_id" value={examId} />
         <input type="hidden" name="subject_id" value={subjectId ?? ""} />
+        <input type="hidden" name="class_id" value={classId ?? ""} />
         <div style={{ padding: 16, borderBottom: "1px solid var(--border)", maxWidth: 220 }}>
           <label htmlFor="max_marks">Maximum marks</label>
-          <input id="max_marks" name="max_marks" type="number" min="1" defaultValue={maxDefault} />
+          <input id="max_marks" name="max_marks" type="number" min="1" step="0.5" defaultValue={maxDefault} required />
         </div>
         <div className="table-wrap">
           <table>

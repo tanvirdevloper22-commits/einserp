@@ -1,32 +1,42 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { formatDate } from "@/lib/dates";
 import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Exams" };
 
+const fail = (m: string): never => redirect(`/exams?error=${encodeURIComponent(m)}`);
+
 async function addExam(formData: FormData) {
   "use server";
   await requireRole(["admin"]);
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) fail("Enter the exam name.");
   const supabase = await createClient();
-  await supabase.from("exams").insert({
-    name: String(formData.get("name")).trim(),
-    exam_date: String(formData.get("exam_date") ?? "") || null,
-  });
+  const { error } = await supabase.from("exams").insert({ name, exam_date: String(formData.get("exam_date") ?? "") || null });
+  if (error) fail(`The exam could not be created: ${error.message}`);
   revalidatePath("/exams");
+  redirect("/exams?added=exam");
 }
 
 async function addSubject(formData: FormData) {
   "use server";
   await requireRole(["admin"]);
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) fail("Enter the subject name.");
   const supabase = await createClient();
-  await supabase.from("subjects").insert({ name: String(formData.get("name")).trim() });
+  const { error } = await supabase.from("subjects").insert({ name });
+  if (error) fail(error.code === "23505" ? `"${name}" is already added.` : `The subject could not be added: ${error.message}`);
   revalidatePath("/exams");
+  redirect("/exams?added=subject");
 }
 
-export default async function ExamsPage() {
+export default async function ExamsPage({ searchParams }: { searchParams: Promise<{ error?: string; added?: string }> }) {
+  const sp = await searchParams;
   const { role } = await requireRole(["admin", "teacher"]);
   const isAdmin = role === "admin";
   const supabase = await createClient();
@@ -41,6 +51,9 @@ export default async function ExamsPage() {
         title="Exams"
         description="Create exams, enter marks by subject and print report cards."
       />
+
+      {sp.error && <div className="error">{sp.error}</div>}
+      {sp.added && <div className="notice ok">{sp.added === "exam" ? "Exam created." : "Subject added."}</div>}
 
       {isAdmin && (
         <div className="grid two">
@@ -76,8 +89,11 @@ export default async function ExamsPage() {
               {exams?.map((e) => (
                 <tr key={e.id}>
                   <td className="strong">{e.name}</td>
-                  <td>{e.exam_date ?? "-"}</td>
-                  <td className="num"><Link className="btn ghost small" href={`/exams/${e.id}`}>Enter marks</Link></td>
+                  <td>{formatDate(e.exam_date)}</td>
+                  <td className="num">
+                    <Link className="btn ghost small" href={`/exams/${e.id}`}>Enter marks</Link>{" "}
+                    <Link className="btn ghost small" href={`/exams/${e.id}/results`}>Results</Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
