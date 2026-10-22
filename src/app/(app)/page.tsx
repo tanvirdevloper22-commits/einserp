@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
@@ -12,6 +13,7 @@ const inr = (n: number) => "₹" + n.toLocaleString("en-IN");
 export default async function Dashboard() {
   // No requireRole here: a wrong-role redirect lands on this page, so guarding it would loop.
   const { role, fullName } = await getProfile();
+  if (role === "parent") redirect("/portal");
   const supabase = await createClient();
   const today = todayISO();
 

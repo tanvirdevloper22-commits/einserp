@@ -14,7 +14,8 @@ const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ?
 
 export default async function TimetablePage({ searchParams }: { searchParams: Promise<{ class?: string; teacher?: string; saved?: string }> }) {
   const me = await getProfile();
-  if (!["admin", "teacher", "accountant"].includes(me.role)) return null;
+  if (!["admin", "teacher", "accountant", "parent"].includes(me.role)) return null;
+  const isParent = me.role === "parent";
   const sp = await searchParams;
   const isAdmin = me.role === "admin";
   const supabase = await createClient();
@@ -27,7 +28,7 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
   ]);
 
   // A teacher opens their own week by default; everyone else opens the first class.
-  const teacherId = sp.teacher ?? (!sp.class && me.role === "teacher" ? me.id : undefined);
+  const teacherId = isParent ? undefined : sp.teacher ?? (!sp.class && me.role === "teacher" ? me.id : undefined);
   const classId = teacherId ? undefined : (sp.class ?? classes?.[0]?.id);
   const cls = classes?.find((c) => c.id === classId);
   const teacherName = teacherId ? (teachers.find((t) => t.id === teacherId)?.name ?? (teacherId === me.id ? me.fullName || "You" : "Teacher")) : null;
@@ -78,7 +79,7 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
             </select>
           </div>
           <button className="btn ghost">Show class</button>
-          {teachers.length > 0 && (
+          {teachers.length > 0 && !isParent && (
             <>
               <div className="grow" style={{ maxWidth: 240 }}>
                 <label htmlFor="teacher">Teacher</label>

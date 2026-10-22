@@ -11,6 +11,7 @@ async function logout() {
 }
 
 const links: (NavItem & { roles: Role[] })[] = [
+  { href: "/portal", label: "My children", icon: "students", roles: ["parent"] },
   { href: "/", label: "Dashboard", icon: "dashboard", roles: STAFF_ROLES },
   { href: "/students", label: "Students", icon: "students", roles: STAFF_ROLES },
   { href: "/attendance", label: "Attendance", icon: "attendance", roles: ["admin", "teacher"] },
@@ -45,15 +46,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <main className="main">
-        {isStaff ? (
+        {isStaff || profile.role === "parent" ? (
           children
         ) : (
           <div className="card" style={{ maxWidth: 520 }}>
-            <h1>{profile.role === "parent" ? "Parent portal coming soon" : "Waiting for approval"}</h1>
+            <h1>Waiting for approval</h1>
             <p className="sub" style={{ marginBottom: 0 }}>
-              {profile.role === "parent"
-                ? "The parent portal is being built. Soon you will be able to see your child's attendance, fees and results here."
-                : "Your account has been created, but no role has been assigned yet. Ask the school admin to approve your account, then log in again."}
+              Your account has been created, but no role has been assigned yet. Ask the school admin to approve your account, then log in again.
             </p>
           </div>
         )}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -189,7 +190,8 @@ export default async function UsersPage({
                       </select>
                     </td>
                     <td className="num">
-                      <form id={formId} action={updateUser}>
+                      {u.role === "parent" && <Link className="btn ghost small" href={`/users/${u.id}/children`} style={{ marginRight: 8 }}>Children</Link>}
+                      <form id={formId} action={updateUser} style={{ display: "inline" }}>
                         <input type="hidden" name="id" value={u.id} />
                         <button className="btn small" disabled={isMe}>Save</button>
                       </form>

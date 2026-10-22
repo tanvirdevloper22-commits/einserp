@@ -16,7 +16,8 @@ const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { minimumFractionDi
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 export default async function ReceiptPage({ params }: { params: Promise<{ paymentId: string }> }) {
-  await requireRole(["admin", "accountant"]);
+  const me = await requireRole(["admin", "accountant", "parent"]);
+  const isParent = me.role === "parent";
   const { paymentId } = await params;
   const supabase = await createClient();
 
@@ -54,7 +55,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ paymen
   return (
     <>
       <PageHeader title="Payment receipt" description={`Receipt #${sum.current.receipt_no} for ${student?.full_name ?? "student"}`}>
-        <Link className="btn ghost" href="/fees/payments">Back to payments</Link>
+        <Link className="btn ghost" href={isParent ? "/portal" : "/fees/payments"}>{isParent ? "Back" : "Back to payments"}</Link>
         <Link className="btn ghost" href={`/fees/invoice/${fee.id}`}>Full invoice</Link>
         <PrintButton />
       </PageHeader>

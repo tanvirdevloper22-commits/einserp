@@ -16,7 +16,8 @@ const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { minimumFractionDi
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 export default async function InvoicePage({ params }: { params: Promise<{ feeId: string }> }) {
-  await requireRole(["admin", "accountant"]);
+  const me = await requireRole(["admin", "accountant", "parent"]);
+  const isParent = me.role === "parent";
   const { feeId } = await params;
   const supabase = await createClient();
 
@@ -55,7 +56,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ feeId:
   return (
     <>
       <PageHeader title="Fee invoice" description={`${invoiceNo} for ${student?.full_name ?? "student"}`}>
-        <Link className="btn ghost" href="/fees">Back to fees</Link>
+        <Link className="btn ghost" href={isParent ? "/portal" : "/fees"}>{isParent ? "Back" : "Back to fees"}</Link>
         <PrintButton />
       </PageHeader>
 
@@ -151,7 +152,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ feeId:
           </div>
         )}
 
-        {!isPaid && !settings.upi_id && (
+        {!isPaid && !settings.upi_id && !isParent && (
           <div className="notice info no-print" style={{ marginTop: 20, marginBottom: 0 }}>
             No payment QR code yet. An admin can add the school&apos;s UPI ID under Settings.
           </div>
