@@ -458,3 +458,25 @@ textarea { resize: vertical; }
   .rc-head, .rc-summary, .af-sign { break-inside: avoid; }
   .report .af-sign { margin-top: 56px; }
 }
+
+/* ---------- Timetable ---------- */
+.tt-card { padding: 20px; }
+.tt-title { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; font-size: 14px; }
+.tt-title span { color: var(--muted); }
+.tt-wrap { border: 1px solid var(--border); border-radius: 8px; }
+.tt { table-layout: fixed; min-width: 720px; }
+.tt th, .tt td { text-align: left; vertical-align: top; }
+.tt th:first-child, .tt .tt-time { width: 140px; }
+.tt-time > span { display: block; }
+.tt-cell { display: table-cell; }
+.tt-cell > span { display: block; }
+.empty-cell { color: var(--muted); }
+.tt-break td { background: var(--surface-2); }
+.tt-break-cell { text-align: center !important; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }
+.tt-edit select { width: 100%; min-width: 0; font-size: 13px; }
+@media print {
+  .timetable-page .toolbar, .timetable-page .page-head { display: none; }
+  .tt-card { padding: 0; }
+  .tt { min-width: 0; font-size: 11px; }
+  .tt-wrap { overflow: visible; }
+}
