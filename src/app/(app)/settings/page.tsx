@@ -150,7 +150,7 @@ export default async function SettingsPage({
             {previewQr && (
               <div style={{ textAlign: "center" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={previewQr} alt="UPI QR preview" width={160} height={160} style={{ border: "1px solid var(--border)", borderRadius: 8, background: "#fff" }} />
+                <img src={previewQr} alt="UPI QR preview" width={160} height={160} style={{ border: "1px solid var(--border)", borderRadius: 0, background: "#fff" }} />
                 <span className="cell-sub" style={{ maxWidth: 170, marginTop: 6 }}>
                   Scan with a UPI app to check it shows the right payee. Do not complete the payment.
                 </span>

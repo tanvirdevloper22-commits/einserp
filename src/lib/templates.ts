@@ -10,7 +10,7 @@ export const DOC_TEMPLATES: TemplateOption[] = [
 
 export const ID_TEMPLATES: TemplateOption[] = [
   { id: "classic", name: "Classic", description: "Centered photo, white header and a colored footer line." },
-  { id: "stripe", name: "Accent stripe", description: "Thin colored stripe across the top, rounded photo." },
+  { id: "stripe", name: "Accent stripe", description: "Thin colored stripe across the top and a tinted footer." },
   { id: "round", name: "Round photo", description: "Circular photo with a colored ring." },
   { id: "left", name: "Left aligned", description: "Photo and name aligned to the left, compact details." },
 ];

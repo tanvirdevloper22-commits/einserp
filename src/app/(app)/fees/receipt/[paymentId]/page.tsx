@@ -100,7 +100,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ paymen
           </div>
         </div>
 
-        <div className="table-wrap" style={{ border: "1px solid var(--border)", borderRadius: 8 }}>
+        <div className="table-wrap" style={{ border: "1px solid var(--border)", borderRadius: 0 }}>
           <table>
             <thead><tr><th>Description</th><th className="num">Amount</th></tr></thead>
             <tbody>
@@ -111,7 +111,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ paymen
 
         <div style={{ marginTop: 20 }}>
           <h2>Payment history</h2>
-          <div className="table-wrap" style={{ border: "1px solid var(--border)", borderRadius: 8 }}>
+          <div className="table-wrap" style={{ border: "1px solid var(--border)", borderRadius: 0 }}>
             <table>
               <thead><tr><th>Receipt no.</th><th>Date</th><th>Mode</th><th className="num">Amount</th></tr></thead>
               <tbody>

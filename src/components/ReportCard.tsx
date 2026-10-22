@@ -52,7 +52,7 @@ export default function ReportCard({ school, exam, className, student, subjects,
 
       {hasMarks ? (
         <>
-          <div className="table-wrap" style={{ border: "1px solid var(--border)", borderRadius: 8 }}>
+          <div className="table-wrap" style={{ border: "1px solid var(--border)", borderRadius: 0 }}>
             <table>
               <thead>
                 <tr><th>Subject</th><th className="num">Marks</th><th className="num">Out of</th><th className="num">Percentage</th><th>Grade</th></tr>
