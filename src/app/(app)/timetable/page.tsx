@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { getTeachers } from "@/lib/teachers";
+import { accentStyle } from "@/lib/templates";
 import PageHeader from "@/components/PageHeader";
 import PrintButton from "@/components/PrintButton";
 import TimetableGrid, { type GridCell } from "@/components/TimetableGrid";
@@ -96,7 +97,7 @@ export default async function TimetablePage({ searchParams }: { searchParams: Pr
       <form id="teacher-form" method="get" />
 
       {!missing && (
-        <div className="card tt-card">
+        <div className="card tt-card" data-doc={school.timetable_template} style={accentStyle(school.accent_color)}>
           <div className="tt-title">
             <strong>{school.school_name}</strong>
             <span>{title}{school.session_label ? ` | Session ${school.session_label}` : ""}</span>

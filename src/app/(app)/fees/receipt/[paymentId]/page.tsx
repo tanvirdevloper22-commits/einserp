@@ -7,6 +7,7 @@ import { buildUpiLink, upiQrDataUrl } from "@/lib/upi";
 import { formatDate } from "@/lib/dates";
 import { summarizePayment } from "@/lib/receipts";
 import PrintButton from "@/components/PrintButton";
+import { accentStyle } from "@/lib/templates";
 import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +61,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ paymen
         <PrintButton />
       </PageHeader>
 
-      <div className="card invoice">
+      <div className="card invoice" data-doc={settings.invoice_template} style={accentStyle(settings.accent_color)}>
         <div className="invoice-top">
           <div className="school-id">
             {settings.logoUrl && (

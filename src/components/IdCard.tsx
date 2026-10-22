@@ -20,7 +20,11 @@ export type IdCardSchool = {
   email: string;
   session: string;
   logoUrl: string | null;
+  template?: string;
+  accent?: string;
 };
+
+const cardStyle = (school: IdCardSchool) => ({ "--idc-accent": school.accent || "#036cf9" }) as React.CSSProperties;
 
 const initials = (name: string) =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
@@ -36,7 +40,7 @@ function Line({ label, value }: { label: string; value?: string | null }) {
 
 export function IdCardFront({ student, school }: { student: IdCardStudent; school: IdCardSchool }) {
   return (
-    <div className="idc idc-front">
+    <div className={`idc idc-front idc-t-${school.template || "classic"}`} style={cardStyle(school)}>
       <div className="idc-head">
         {school.logoUrl && (
           <span className="idc-logo">
@@ -73,7 +77,7 @@ export function IdCardFront({ student, school }: { student: IdCardStudent; schoo
 
 export function IdCardBack({ student, school }: { student: IdCardStudent; school: IdCardSchool }) {
   return (
-    <div className="idc idc-back">
+    <div className={`idc idc-back idc-t-${school.template || "classic"}`} style={cardStyle(school)}>
       <div className="idc-back-title">If found, please return to</div>
       <div className="idc-back-school">{school.name}</div>
       {school.address && <div className="idc-back-text">{school.address}</div>}

@@ -77,6 +77,8 @@ export default async function IdCardsPage({
     email: settings.email,
     session: settings.session_label,
     logoUrl: settings.logoUrl,
+    template: settings.idcard_template,
+    accent: settings.accent_color,
   };
 
   const sheets = toSheets(students);

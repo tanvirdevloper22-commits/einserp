@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/dates";
+import { accentStyle } from "@/lib/templates";
 import { GRADE_BANDS, PASS_PCT, ordinal, type StudentResult } from "@/lib/grades";
 import type { ClassStudent } from "@/lib/results";
 import type { SchoolSettings } from "@/lib/settings";
@@ -18,7 +19,7 @@ const num = (n: number) => String(Math.round(n * 100) / 100);
 export default function ReportCard({ school, exam, className, student, subjects, result, classSize }: Props) {
   const hasMarks = result.scores.size > 0;
   return (
-    <div className="card report">
+    <div className="card report" data-doc={school.report_template} style={accentStyle(school.accent_color)}>
       <header className="rc-head">
         <div className="school-id">
           {school.logoUrl && (

@@ -6,6 +6,8 @@ import { getSettings } from "@/lib/settings";
 import { UPI_ID_PATTERN, buildUpiLink, upiQrDataUrl } from "@/lib/upi";
 import PageHeader from "@/components/PageHeader";
 import LogoUpload from "@/components/LogoUpload";
+import TemplatePicker from "@/components/TemplatePicker";
+import { ACCENT_PRESETS, DOC_KINDS, DOC_TEMPLATES, ID_TEMPLATES, pickAccent, pickTemplate } from "@/lib/templates";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings" };
@@ -53,10 +55,36 @@ async function saveSettings(formData: FormData) {
   redirect("/settings?saved=1");
 }
 
+async function saveTemplates(formData: FormData) {
+  "use server";
+  await requireRole(["admin"]);
+  const text = (k: string) => String(formData.get(k) ?? "");
+
+  const accentChoice = text("accent");
+  const accent = pickAccent(accentChoice === "custom" ? text("accent_custom") : accentChoice);
+  const row: Record<string, string | number> = {
+    id: 1,
+    accent_color: accent,
+    idcard_template: pickTemplate(text("idcard_template"), ID_TEMPLATES),
+    updated_at: new Date().toISOString(),
+  };
+  for (const d of DOC_KINDS) row[d.column] = pickTemplate(text(d.column), DOC_TEMPLATES);
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("school_settings").upsert(row);
+  if (error) {
+    fail(/template|accent_color/.test(error.message)
+      ? "The database is missing the template fields. Run supabase/009_templates.sql in the Supabase SQL Editor first."
+      : error.message);
+  }
+  revalidatePath("/settings");
+  redirect("/settings?templates=1");
+}
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; templates?: string }>;
 }) {
   await requireRole(["admin"]);
   const sp = await searchParams;
@@ -74,6 +102,8 @@ export default async function SettingsPage({
 
       {sp.error && <div className="error">{sp.error}</div>}
       {sp.saved && <div className="notice ok">Settings saved. New invoices will use these details.</div>}
+
+      {sp.templates && <div className="notice ok">Templates saved. They apply to everything you print from now on.</div>}
 
       <div style={{ marginBottom: 16 }}>
         <LogoUpload currentUrl={s.logoUrl} />
@@ -134,6 +164,41 @@ export default async function SettingsPage({
         </div>
 
         <div><button className="btn">Save settings</button></div>
+      </form>
+
+      <form action={saveTemplates} className="stack" style={{ marginTop: 24 }}>
+        <div className="card">
+          <h2>Colour</h2>
+          <p className="sub" style={{ marginTop: -6 }}>The accent colour used by the templates below.</p>
+          <div className="swatches" role="radiogroup" aria-label="Accent colour">
+            {ACCENT_PRESETS.map((c) => (
+              <label key={c.hex} className="swatch" title={c.name}>
+                <input type="radio" name="accent" value={c.hex} defaultChecked={s.accent_color === c.hex.toLowerCase()} />
+                <span style={{ background: c.hex }} />
+              </label>
+            ))}
+            <label className="swatch custom" title="Custom colour">
+              <input type="radio" name="accent" value="custom" defaultChecked={!ACCENT_PRESETS.some((c) => c.hex === s.accent_color)} />
+              <input type="color" name="accent_custom" defaultValue={s.accent_color} aria-label="Custom colour" />
+            </label>
+          </div>
+        </div>
+
+        {DOC_KINDS.map((d) => (
+          <div className="card" key={d.kind}>
+            <h2>{d.title}</h2>
+            <p className="sub" style={{ marginTop: -6 }}>{d.hint}</p>
+            <TemplatePicker name={d.column} options={DOC_TEMPLATES} value={s[d.column as keyof typeof s] as string} kind="doc" />
+          </div>
+        ))}
+
+        <div className="card">
+          <h2>Student ID card</h2>
+          <p className="sub" style={{ marginTop: -6 }}>The front and back of the printed ID card.</p>
+          <TemplatePicker name="idcard_template" options={ID_TEMPLATES} value={s.idcard_template} kind="id" />
+        </div>
+
+        <div><button className="btn">Save templates</button></div>
       </form>
     </>
   );
