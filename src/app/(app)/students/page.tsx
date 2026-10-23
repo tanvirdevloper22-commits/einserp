@@ -2,7 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole, STAFF_ROLES } from "@/lib/auth";
 import { STUDENT_BUCKET } from "@/lib/students";
+import { PAGE_SIZE, cleanSearch, pageRange, parsePage } from "@/lib/pagination";
 import PageHeader from "@/components/PageHeader";
+import Pagination from "@/components/Pagination";
 import { deleteStudent } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -15,20 +17,27 @@ const initials = (name: string) =>
 export default async function StudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ class?: string }>;
+  searchParams: Promise<{ class?: string; q?: string; page?: string }>;
 }) {
   const { role } = await requireRole(STAFF_ROLES);
   const isAdmin = role === "admin";
-  const { class: classFilter } = await searchParams;
+  const { class: classFilter, q: rawQuery, page: rawPage } = await searchParams;
+  const search = cleanSearch(rawQuery);
+  const page = parsePage(rawPage);
+  const { from, to } = pageRange(page);
   const supabase = await createClient();
 
   const { data: classes } = await supabase.from("classes").select("*").order("name");
   let q = supabase
     .from("students")
-    .select("id, admission_no, full_name, guardian_name, guardian_phone, status, photo_path, classes(name, section)")
-    .order("full_name");
+    .select("id, admission_no, full_name, guardian_name, guardian_phone, status, photo_path, classes(name, section)", { count: "exact" })
+    .order("full_name")
+    .order("id")
+    .range(from, to);
   if (classFilter) q = q.eq("class_id", classFilter);
-  const { data: students } = await q;
+  if (search) q = q.or(`full_name.ilike.%${search}%,admission_no.ilike.%${search}%,guardian_phone.ilike.%${search}%,guardian_name.ilike.%${search}%`);
+  const { data: students, count } = await q;
+  const total = count ?? students?.length ?? 0;
 
   // Signed links for the small photos. If the storage migration has not been run yet this simply yields no photos.
   const photoUrl = new Map<string, string>();
@@ -52,6 +61,10 @@ export default async function StudentsPage({
 
       <form className="card toolbar" method="get">
         <div className="row">
+          <div className="grow" style={{ maxWidth: 320 }}>
+            <label htmlFor="q">Search</label>
+            <input id="q" name="q" type="search" defaultValue={search} placeholder="Name, admission no. or phone" />
+          </div>
           <div className="grow" style={{ maxWidth: 280 }}>
             <label htmlFor="class">Filter by class</label>
             <select id="class" name="class" defaultValue={classFilter ?? ""}>
@@ -62,7 +75,7 @@ export default async function StudentsPage({
             </select>
           </div>
           <button className="btn ghost">Apply</button>
-          {classFilter && <Link className="btn ghost" href="/students">Clear</Link>}
+          {(classFilter || search) && <Link className="btn ghost" href="/students">Clear</Link>}
         </div>
       </form>
 
@@ -121,9 +134,10 @@ export default async function StudentsPage({
         {!students?.length && (
           <div className="empty">
             <strong>No students found</strong>
-            {isAdmin ? "Use New admission to add the first student." : "Students will appear here once they are admitted."}
+            {search || classFilter ? "Try a different search or clear the filters." : isAdmin ? "Use New admission to add the first student." : "Students will appear here once they are admitted."}
           </div>
         )}
+        <Pagination basePath="/students" params={{ class: classFilter, q: search }} page={page} total={total} size={PAGE_SIZE} />
       </div>
     </>
   );

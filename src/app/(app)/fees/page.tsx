@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { todayISO, formatDate } from "@/lib/dates";
+import { cleanSearch, pageRange, parsePage } from "@/lib/pagination";
 import PageHeader from "@/components/PageHeader";
+import Pagination from "@/components/Pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Fees" };
@@ -86,21 +88,50 @@ async function recordPayment(formData: FormData) {
 export default async function FeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pending?: string; error?: string; paid?: string; fee?: string; receipt?: string; assigned?: string }>;
+  searchParams: Promise<{ pending?: string; error?: string; paid?: string; fee?: string; receipt?: string; assigned?: string; q?: string; page?: string }>;
 }) {
   await requireRole(["admin", "accountant"]);
   const sp = await searchParams;
   const pending = sp.pending;
+  const search = cleanSearch(sp.q);
+  const page = parsePage(sp.page);
+  const { from, to } = pageRange(page);
   const supabase = await createClient();
 
-  const [{ data: classes }, { data: students }, { data: balances }] = await Promise.all([
+  // A search is turned into the matching students first, then only their fees are loaded.
+  let matchIds: string[] | null = null;
+  if (search) {
+    const { data: found } = await supabase
+      .from("students")
+      .select("id")
+      .or(`full_name.ilike.%${search}%,admission_no.ilike.%${search}%`)
+      .limit(200);
+    matchIds = (found ?? []).map((s) => s.id);
+  }
+
+  let ledger = supabase
+    .from("fee_balances")
+    .select("*", { count: "exact" })
+    .order("due_date", { ascending: true, nullsFirst: false })
+    .order("fee_id")
+    .range(from, to);
+  if (pending) ledger = ledger.gt("due", 0);
+  if (matchIds) ledger = ledger.in("student_id", matchIds.length ? matchIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const [{ data: classes }, { data: students }, { data: balances, count }] = await Promise.all([
     supabase.from("classes").select("*").order("name"),
     supabase.from("students").select("id, admission_no, full_name").eq("status", "active").order("full_name"),
-    supabase.from("fee_balances").select("*").order("due_date", { ascending: true, nullsFirst: false }),
+    ledger,
   ]);
 
-  const nameOf = new Map((students ?? []).map((s) => [s.id, { name: s.full_name, no: s.admission_no }]));
-  const rows = (balances ?? []).filter((b) => (pending ? Number(b.due) > 0 : true));
+  // Names for this page of the ledger (including students who have since left).
+  const pageStudentIds = [...new Set((balances ?? []).map((b) => b.student_id as string))];
+  const { data: pageStudents } = pageStudentIds.length
+    ? await supabase.from("students").select("id, admission_no, full_name").in("id", pageStudentIds)
+    : { data: [] as { id: string; admission_no: string; full_name: string }[] };
+  const nameOf = new Map((pageStudents ?? []).map((s) => [s.id, { name: s.full_name, no: s.admission_no }]));
+  const rows = balances ?? [];
+  const total = count ?? rows.length;
 
   return (
     <>
@@ -153,8 +184,13 @@ export default async function FeesPage({
       <div className="page-head" style={{ marginBottom: 12 }}>
         <h2 style={{ margin: 0 }}>Fee ledger</h2>
         <div className="page-actions">
-          <Link className={`btn small ${pending ? "ghost" : ""}`} href="/fees">All fees</Link>
-          <Link className={`btn small ${pending ? "" : "ghost"}`} href="/fees?pending=1">Pending only</Link>
+          <form method="get" className="row tight">
+            {pending && <input type="hidden" name="pending" value="1" />}
+            <input name="q" type="search" defaultValue={search} placeholder="Search student" aria-label="Search student" style={{ width: 200 }} />
+            <button className="btn ghost small">Search</button>
+          </form>
+          <Link className={`btn small ${pending ? "ghost" : ""}`} href={search ? `/fees?q=${encodeURIComponent(search)}` : "/fees"}>All fees</Link>
+          <Link className={`btn small ${pending ? "" : "ghost"}`} href={`/fees?pending=1${search ? `&q=${encodeURIComponent(search)}` : ""}`}>Pending only</Link>
         </div>
       </div>
 
@@ -213,10 +249,11 @@ export default async function FeesPage({
         </div>
         {!rows.length && (
           <div className="empty">
-            <strong>{pending ? "No pending fees" : "No fees yet"}</strong>
-            {pending ? "Every assigned fee has been paid." : "Assign a fee above, or generate fees from the fee structure."}
+            <strong>{search ? "No fees match your search" : pending ? "No pending fees" : "No fees yet"}</strong>
+            {search ? "Try a different name or admission number." : pending ? "Every assigned fee has been paid." : "Assign a fee above, or generate fees from the fee structure."}
           </div>
         )}
+        <Pagination basePath="/fees" params={{ pending, q: search }} page={page} total={total} />
       </div>
     </>
   );

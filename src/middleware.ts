@@ -25,9 +25,10 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims checks the session token locally (and refreshes it when it has expired) instead of asking the auth
+  // server on every request, which keeps every page load fast. The database still enforces access through RLS.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
 
   const isLogin = request.nextUrl.pathname.startsWith("/login");
 

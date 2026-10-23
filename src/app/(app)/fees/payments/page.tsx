@@ -2,7 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { todayISO, formatDate } from "@/lib/dates";
+import { pageRange, parsePage } from "@/lib/pagination";
 import PageHeader from "@/components/PageHeader";
+import Pagination from "@/components/Pagination";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Payments" };
@@ -10,18 +12,22 @@ export const metadata = { title: "Payments" };
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
-export default async function PaymentsPage() {
+export default async function PaymentsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const sp = await searchParams;
+  const page = parsePage(sp.page);
+  const { from, to } = pageRange(page);
   await requireRole(["admin", "accountant"]);
   const supabase = await createClient();
   const today = todayISO();
   const monthStart = today.slice(0, 8) + "01";
 
-  const [{ data: payments, error }, { data: monthRows }] = await Promise.all([
+  const [{ data: payments, error, count }, { data: monthRows }] = await Promise.all([
     supabase
       .from("payments")
-      .select("id, receipt_no, amount, paid_on, mode, fee_id, fees(title, students(full_name, admission_no))")
+      .select("id, receipt_no, amount, paid_on, mode, fee_id, fees(title, students(full_name, admission_no))", { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(200),
+      .order("id")
+      .range(from, to),
     supabase.from("payments").select("amount, paid_on").gte("paid_on", monthStart),
   ]);
 
@@ -80,6 +86,7 @@ export default async function PaymentsPage() {
             Payments you record on the Fees page will be listed here.
           </div>
         )}
+        <Pagination basePath="/fees/payments" params={{}} page={page} total={count ?? payments?.length ?? 0} />
       </div>
     </>
   );
