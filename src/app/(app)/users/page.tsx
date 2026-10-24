@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, hasServiceRoleKey } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
+import ConfirmButton from "@/components/ConfirmButton";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Users" };
@@ -86,10 +87,42 @@ async function resetPassword(formData: FormData) {
   redirect("/users?reset=1");
 }
 
+async function deleteUser(formData: FormData) {
+  "use server";
+  const me = await requireRole(["admin"]);
+  if (!hasServiceRoleKey()) {
+    fail("The server is missing SUPABASE_SERVICE_ROLE_KEY. Add it in Vercel under Settings, Environment Variables, then redeploy.");
+  }
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) fail("Choose a user.");
+  if (id === me.id) fail("You cannot delete your own account.");
+
+  const supabase = await createClient();
+  const { data: target } = await supabase.from("profiles").select("email, role").eq("id", id).maybeSingle();
+  if (!target) fail("That user was not found. It may already be deleted.");
+
+  // Never remove the last admin, so the school cannot be locked out.
+  if (target!.role === "admin") {
+    const { count } = await supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "admin");
+    if ((count ?? 0) <= 1) fail("This is the only admin account, so it cannot be deleted.");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) fail(`The user could not be deleted: ${error.message}`);
+
+  // The profile and any parent-child links go with the login; this only makes sure nothing is left behind.
+  await admin.from("profiles").delete().eq("id", id);
+
+  revalidatePath("/users");
+  redirect(`/users?deleted=${encodeURIComponent(target!.email ?? "The user")}`);
+}
+
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string; reset?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; reset?: string; deleted?: string }>;
 }) {
   const me = await requireRole(["admin"]);
   const sp = await searchParams;
@@ -106,7 +139,7 @@ export default async function UsersPage({
     <>
       <PageHeader
         title="Users"
-        description="Create staff accounts, assign roles and reset passwords."
+        description="Create accounts, assign roles, reset passwords and remove users."
       >
         {pendingCount > 0 && <span className="badge warn">{pendingCount} waiting for a role</span>}
       </PageHeader>
@@ -114,6 +147,7 @@ export default async function UsersPage({
       {sp.error && <div className="error">{sp.error}</div>}
       {sp.created && <div className="notice ok">Account created for {sp.created}. Share the email and password with them so they can log in.</div>}
       {sp.reset && <div className="notice ok">Password updated.</div>}
+      {sp.deleted && <div className="notice ok">{sp.deleted} was deleted and can no longer log in.</div>}
       {keyMissing && (
         <div className="notice info">
           Creating users and resetting passwords needs the <strong>SUPABASE_SERVICE_ROLE_KEY</strong> environment
@@ -194,6 +228,16 @@ export default async function UsersPage({
                       <form id={formId} action={updateUser} style={{ display: "inline" }}>
                         <input type="hidden" name="id" value={u.id} />
                         <button className="btn small" disabled={isMe}>Save</button>
+                      </form>
+                      <form action={deleteUser} style={{ display: "inline", marginLeft: 8 }}>
+                        <input type="hidden" name="id" value={u.id} />
+                        <ConfirmButton
+                          className="btn danger small"
+                          disabled={isMe || keyMissing}
+                          message={`Delete ${u.email}? They will no longer be able to log in. This cannot be undone.`}
+                        >
+                          Delete
+                        </ConfirmButton>
                       </form>
                     </td>
                   </tr>
