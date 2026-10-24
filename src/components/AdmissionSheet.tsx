@@ -17,8 +17,8 @@ function Row({ label, value }: { label: string; value?: string | null }) {
 
 
 export default function AdmissionSheet({
-  settings, s, cls, photoUrl,
-}: { settings: SchoolSettings; s: Student; cls: { name: string; section: string } | null; photoUrl: string | null }) {
+  settings, s, cls, photoUrl, idProofHref,
+}: { settings: SchoolSettings; s: Student; cls: { name: string; section: string } | null; photoUrl: string | null; idProofHref?: string }) {
   return (
       <div className="card admission" data-doc={settings.admission_template} style={accentStyle(settings.accent_color)}>
         <header className="af-head">
@@ -81,6 +81,12 @@ export default function AdmissionSheet({
           <Row label="Document" value={s.id_proof_type} />
           <Row label="Document number" value={s.id_proof_number} />
           <Row label="Copy attached" value={s.id_proof_path ? "Yes" : "No"} />
+          {idProofHref && s.id_proof_path && (
+            <div className="af-row no-print">
+              <span className="af-label">Uploaded copy</span>
+              <a className="af-value" href={idProofHref} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>View ID proof</a>
+            </div>
+          )}
         </div>
 
         <p className="af-declaration">

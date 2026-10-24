@@ -17,11 +17,11 @@ const initials = (name: string) =>
 export default async function StudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ class?: string; q?: string; page?: string }>;
+  searchParams: Promise<{ class?: string; q?: string; page?: string; error?: string }>;
 }) {
   const { role } = await requireRole(STAFF_ROLES);
   const isAdmin = role === "admin";
-  const { class: classFilter, q: rawQuery, page: rawPage } = await searchParams;
+  const { class: classFilter, q: rawQuery, page: rawPage, error: notice } = await searchParams;
   const search = cleanSearch(rawQuery);
   const page = parsePage(rawPage);
   const { from, to } = pageRange(page);
@@ -30,7 +30,7 @@ export default async function StudentsPage({
   const { data: classes } = await supabase.from("classes").select("*").order("name");
   let q = supabase
     .from("students")
-    .select("id, admission_no, full_name, guardian_name, guardian_phone, status, photo_path, classes(name, section)", { count: "exact" })
+    .select("id, admission_no, full_name, guardian_name, guardian_phone, status, photo_path, id_proof_path, classes(name, section)", { count: "exact" })
     .order("full_name")
     .order("id")
     .range(from, to);
@@ -58,6 +58,8 @@ export default async function StudentsPage({
         {isAdmin && <Link className="btn ghost" href="/students/id-cards">ID cards</Link>}
         {isAdmin && <Link className="btn" href="/students/new">New admission</Link>}
       </PageHeader>
+
+      {notice && <div className="error">{notice}</div>}
 
       <form className="card toolbar" method="get">
         <div className="row">
@@ -116,6 +118,9 @@ export default async function StudentsPage({
                       <td>
                         <div className="row tight" style={{ justifyContent: "flex-end" }}>
                           <Link className="btn ghost small" href={`/students/${s.id}/admission-form`}>Admission form</Link>
+                          {s.id_proof_path && (
+                            <a className="btn ghost small" href={`/students/${s.id}/id-proof`} target="_blank" rel="noopener noreferrer">ID proof</a>
+                          )}
                           <Link className="btn ghost small" href={`/students/id-cards?student=${s.id}`}>ID card</Link>
                           <Link className="btn ghost small" href={`/students/${s.id}/edit`}>Edit</Link>
                           <form action={deleteStudent}>

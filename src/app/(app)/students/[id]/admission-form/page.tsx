@@ -53,7 +53,7 @@ export default async function AdmissionFormPage({
         </div>
       )}
 
-      <AdmissionSheet settings={settings} s={s} cls={cls} photoUrl={photoUrl} />
+      <AdmissionSheet settings={settings} s={s} cls={cls} photoUrl={photoUrl} idProofHref={`/students/${id}/id-proof`} />
     </div>
   );
 }

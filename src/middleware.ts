@@ -30,9 +30,12 @@ export async function middleware(request: NextRequest) {
   const { data: claimsData } = await supabase.auth.getClaims();
   const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
 
-  const isLogin = request.nextUrl.pathname.startsWith("/login");
+  const path = request.nextUrl.pathname;
+  const isLogin = path.startsWith("/login");
+  // Pages a signed-out person must be able to reach: the password reset request and the email link's landing route.
+  const isPublic = isLogin || path.startsWith("/forgot-password") || path.startsWith("/auth/callback");
 
-  if (!user && !isLogin) {
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
