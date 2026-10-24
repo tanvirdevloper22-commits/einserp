@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import AuthShell from "@/components/AuthShell";
+import PasswordInput from "@/components/PasswordInput";
 
 export const metadata = { title: "Log in" };
 
@@ -36,7 +37,7 @@ export default async function LoginPage({
         </div>
         <div style={{ marginBottom: 8 }}>
           <label htmlFor="password">Password</label>
-          <input id="password" name="password" type="password" required autoComplete="current-password" />
+          <PasswordInput id="password" name="password" required autoComplete="current-password" />
         </div>
         <div style={{ marginBottom: 20, textAlign: "right" }}>
           <Link href="/forgot-password" className="cell-sub" style={{ display: "inline", textDecoration: "underline" }}>Forgot password?</Link>

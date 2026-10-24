@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AuthShell from "@/components/AuthShell";
+import PasswordInput from "@/components/PasswordInput";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Choose a new password" };
@@ -42,11 +43,11 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
         {error && <div className="error">{error}</div>}
         <div style={{ marginBottom: 16 }}>
           <label htmlFor="password">New password</label>
-          <input id="password" name="password" type="password" required minLength={MIN_PASSWORD} autoComplete="new-password" />
+          <PasswordInput id="password" name="password" required minLength={MIN_PASSWORD} autoComplete="new-password" />
         </div>
         <div style={{ marginBottom: 20 }}>
           <label htmlFor="confirm">Confirm password</label>
-          <input id="confirm" name="confirm" type="password" required minLength={MIN_PASSWORD} autoComplete="new-password" />
+          <PasswordInput id="confirm" name="confirm" required minLength={MIN_PASSWORD} autoComplete="new-password" />
         </div>
         <button className="btn" style={{ width: "100%", padding: "10px 14px" }}>Save password</button>
       </form>
