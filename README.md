@@ -43,7 +43,7 @@ aur role-based policies (admin / teacher / parent) add karni hongi.
 
 ## Aage ke modules
 
-Timetable, teacher/staff aur salary, parent portal, SMS/WhatsApp fee reminders, notices.
+Teacher/staff aur salary, SMS/WhatsApp fee reminders. (Timetable, parent portal and notices are done.)
 
 ## Roles (migration 002)
 
@@ -83,3 +83,8 @@ and a public `school-assets` bucket for the logo (admin-only upload, 1 MB limit)
 - **Settings -> Academic session** (for example `2026-27`) is printed on ID cards as the validity.
 - **Students -> ID cards:** pick a class (or use the ID card button on a student) to print 54 x 86 mm cards, nine per A4 sheet, front and back.
   For two-sided printing choose double-sided printing that flips on the long edge, so the backs line up with the fronts.
+
+## Notices (migration 011)
+
+Run `supabase/011_notices.sql` in the SQL Editor (after 002 and 008). **Notices** in the sidebar lets admins post to everyone, staff only, all parents or one class (optionally pinned, with an expiry date).
+Teachers can post to their classes or to staff and delete only their own notices. Parents see notices for everyone, for parents, and for their children's classes. Latest notices also show on the dashboard and the parent portal.

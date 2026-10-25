@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
 import { todayISO } from "@/lib/dates";
+import { getNotices } from "@/lib/notices";
+import NoticeList from "@/components/NoticeList";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
@@ -20,7 +22,7 @@ export default async function Dashboard() {
   const showAttendance = role === "admin" || role === "teacher";
   const showFees = role === "admin" || role === "accountant";
 
-  const [students, present, absent, balances] = await Promise.all([
+  const [students, present, absent, balances, latest] = await Promise.all([
     supabase.from("students").select("id", { count: "exact", head: true }).eq("status", "active"),
     showAttendance
       ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("date", today).eq("status", "present")
@@ -29,6 +31,7 @@ export default async function Dashboard() {
       ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("date", today).eq("status", "absent")
       : Promise.resolve({ count: 0 }),
     showFees ? supabase.from("fee_balances").select("due") : Promise.resolve({ data: [] as { due: number }[] }),
+    getNotices({ limit: 3 }),
   ]);
 
   const totalDue = (balances.data ?? []).reduce((s, r) => s + Number(r.due), 0);
@@ -71,6 +74,16 @@ export default async function Dashboard() {
           </div>
         )}
       </div>
+
+      {latest.notices.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <h2 style={{ margin: 0 }}>Latest notices</h2>
+            <Link className="btn ghost small" href="/notices">View all</Link>
+          </div>
+          <NoticeList notices={latest.notices} />
+        </div>
+      )}
 
       <div className="card">
         <h2>Quick actions</h2>

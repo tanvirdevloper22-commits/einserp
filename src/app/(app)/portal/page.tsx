@@ -5,6 +5,8 @@ import { getProfile } from "@/lib/auth";
 import { formatDate, todayISO } from "@/lib/dates";
 import { gradeFor } from "@/lib/grades";
 import PageHeader from "@/components/PageHeader";
+import NoticeList from "@/components/NoticeList";
+import { getNotices } from "@/lib/notices";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My children" };
@@ -46,11 +48,12 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const today = todayISO();
   const monthStart = today.slice(0, 8) + "01";
 
-  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }] = await Promise.all([
+  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }] = await Promise.all([
     supabase.from("attendance").select("status").eq("student_id", child.id).gte("date", monthStart),
     supabase.from("attendance").select("date, status").eq("student_id", child.id).order("date", { ascending: false }).limit(10),
     supabase.from("fee_balances").select("*").eq("student_id", child.id).order("due_date", { ascending: false, nullsFirst: false }),
     supabase.from("marks").select("exam_id, marks_obtained, max_marks, exams(name, exam_date)").eq("student_id", child.id),
+    getNotices({ limit: 3 }),
   ]);
 
   const count = (st: string) => (monthRows ?? []).filter((r) => r.status === st).length;
@@ -81,6 +84,16 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           {children.map((c) => (
             <Link key={c.id} className={c.id === child.id ? "btn" : "btn ghost"} href={`/portal?child=${c.id}`}>{c.full_name}</Link>
           ))}
+        </div>
+      )}
+
+      {latestNotices.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <h2 style={{ margin: 0 }}>Notices</h2>
+            <Link className="btn ghost small" href="/notices">View all</Link>
+          </div>
+          <NoticeList notices={latestNotices} />
         </div>
       )}
 
