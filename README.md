@@ -43,7 +43,7 @@ aur role-based policies (admin / teacher / parent) add karni hongi.
 
 ## Aage ke modules
 
-Teacher/staff aur salary, SMS/WhatsApp fee reminders. (Timetable, parent portal and notices are done.)
+Staff attendance and salary, SMS/WhatsApp fee reminders. (Timetable, parent portal, notices and staff records are done.)
 
 ## Roles (migration 002)
 
@@ -88,3 +88,9 @@ and a public `school-assets` bucket for the logo (admin-only upload, 1 MB limit)
 
 Run `supabase/011_notices.sql` in the SQL Editor (after 002 and 008). **Notices** in the sidebar lets admins post to everyone, staff only, all parents or one class (optionally pinned, with an expiry date).
 Teachers can post to their classes or to staff and delete only their own notices. Parents see notices for everyone, for parents, and for their children's classes. Latest notices also show on the dashboard and the parent portal.
+
+## Staff (migration 012)
+
+Run `supabase/012_staff.sql` in the SQL Editor (after 002). **Staff** in the sidebar (admin only) keeps a record for every teacher and employee:
+employee number, designation, subjects, contact and emergency details, joining date and status. A staff member can be linked to a login account
+(create the account on the Users page first) and set as class teacher of one class. Use **Mark left** instead of deleting when someone leaves.
