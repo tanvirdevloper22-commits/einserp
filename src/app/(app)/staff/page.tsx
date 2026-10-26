@@ -46,6 +46,7 @@ export default async function StaffPage({
   return (
     <>
       <PageHeader title="Staff" description="Teachers and other school employees.">
+        <Link className="btn ghost" href="/staff/attendance">Attendance</Link>
         <Link className="btn" href="/staff/new">Add staff member</Link>
       </PageHeader>
 

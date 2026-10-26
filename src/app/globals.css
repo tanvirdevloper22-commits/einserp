@@ -221,6 +221,7 @@ input:disabled, select:disabled { background: var(--surface-2); color: var(--mut
 .seg input:checked + span.a { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
 .seg input:checked + span.l { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
 .seg input:checked + span.v { background: var(--info-soft); color: var(--info); border-color: var(--info); }
+.seg input:checked + span.h { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
 
 /* ---------- Login ---------- */
 .login-wrap { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
