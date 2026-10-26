@@ -122,6 +122,7 @@ export default async function StudentsPage({
                             <a className="btn ghost small" href={`/students/${s.id}/id-proof`} target="_blank" rel="noopener noreferrer">ID proof</a>
                           )}
                           <Link className="btn ghost small" href={`/students/id-cards?student=${s.id}`}>ID card</Link>
+                          <Link className="btn ghost small" href={`/certificates/new?student=${s.id}`}>Certificate</Link>
                           <Link className="btn ghost small" href={`/students/${s.id}/edit`}>Edit</Link>
                           <form action={deleteStudent}>
                             <input type="hidden" name="id" value={s.id} />

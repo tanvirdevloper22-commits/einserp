@@ -112,3 +112,10 @@ Amounts are copied into the payslip, so changing a salary later never changes a 
 No migration needed. On **Fees -> Defaulters** each row has **WhatsApp** and **SMS** buttons. They open WhatsApp or the messaging app with a ready-written reminder
 (school name, student, balance, amount past the due date and your UPI ID from Settings); you press send yourself. Indian numbers are accepted with or without 0, 91 or +91.
 Rows with a missing or invalid guardian phone number show a note instead. Fully automatic sending would need a WhatsApp Business API or SMS provider account.
+
+## Certificates (migration 015)
+
+Run `supabase/015_certificates.sql` in the SQL Editor (after 002). **Certificates** (admin only) issues numbered **Transfer Certificates (TC-0001...)**, **Bonafide** and **Character** certificates.
+Start from the Students list (**Certificate** button) or Certificates -> Issue a certificate. A TC asks for the date of and reason for leaving and the conduct, warns if fees are unpaid
+(an admin can still override), and can mark the student as left. The student's details are copied onto the certificate when it is issued, so editing the student later never changes it.
+Each certificate opens as a printable page in your chosen document template.
