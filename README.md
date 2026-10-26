@@ -43,7 +43,7 @@ aur role-based policies (admin / teacher / parent) add karni hongi.
 
 ## Aage ke modules
 
-Staff attendance and salary, SMS/WhatsApp fee reminders. (Timetable, parent portal, notices and staff records are done.)
+Automatic (API based) fee reminders. (Timetable, parent portal, notices, staff, attendance, payroll and one-tap WhatsApp/SMS fee reminders are done.)
 
 ## Roles (migration 002)
 
@@ -94,3 +94,21 @@ Teachers can post to their classes or to staff and delete only their own notices
 Run `supabase/012_staff.sql` in the SQL Editor (after 002). **Staff** in the sidebar (admin only) keeps a record for every teacher and employee:
 employee number, designation, subjects, contact and emergency details, joining date and status. A staff member can be linked to a login account
 (create the account on the Users page first) and set as class teacher of one class. Use **Mark left** instead of deleting when someone leaves.
+
+## Staff attendance (migration 013)
+
+Run `supabase/013_staff_attendance.sql` in the SQL Editor (after 012). **Staff -> Attendance** (admin only) marks each active staff member present, late, half day, absent or on leave for a date, with an optional note.
+**Monthly report** shows the counts per person and "days worked" (present and late = 1, half day = 0.5), ready to feed the salary module.
+
+## Payroll (migration 014)
+
+Run `supabase/014_payroll.sql` in the SQL Editor (after 012 and 013). Set each person's **Monthly salary** on the Staff page, mark their attendance, then open **Payroll** (admin only) and choose **Generate payslips** for the month.
+Pay is salary x payable days / days in the month. Each absent day is unpaid, a half day loses half a day, and leave is paid up to the "paid leave days per person" you enter, then unpaid.
+Late arrivals and unmarked days (Sundays, holidays) are paid in full. Type allowances and deductions into a draft, then **Mark paid** (with payment mode) and print the **Slip**.
+Amounts are copied into the payslip, so changing a salary later never changes a month that is already paid. Refreshing a month keeps typed allowances and deductions and never touches paid payslips.
+
+## Fee reminders
+
+No migration needed. On **Fees -> Defaulters** each row has **WhatsApp** and **SMS** buttons. They open WhatsApp or the messaging app with a ready-written reminder
+(school name, student, balance, amount past the due date and your UPI ID from Settings); you press send yourself. Indian numbers are accepted with or without 0, 91 or +91.
+Rows with a missing or invalid guardian phone number show a note instead. Fully automatic sending would need a WhatsApp Business API or SMS provider account.

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { getDefaulters } from "@/lib/defaulters";
+import { getSettings } from "@/lib/settings";
+import { buildReminderMessage, normalizePhone, smsLink, whatsappLink } from "@/lib/reminders";
 import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
@@ -18,9 +20,10 @@ export default async function DefaultersPage({
   const { class: classId } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: classes }, rows] = await Promise.all([
+  const [{ data: classes }, rows, settings] = await Promise.all([
     supabase.from("classes").select("*").order("name"),
     getDefaulters(classId || undefined),
+    getSettings(),
   ]);
 
   const grandTotal = rows.reduce((s, r) => s + r.totalDue, 0);
@@ -38,6 +41,10 @@ export default async function DefaultersPage({
         <div className="card stat"><span className="label">Total outstanding</span><span className="value">{inr(grandTotal)}</span></div>
         <div className="card stat"><span className="label">Past due date</span><span className="value">{inr(grandOverdue)}</span></div>
       </div>
+
+      <p className="sub no-print" style={{ marginTop: 0 }}>
+        WhatsApp and SMS open on your phone or computer with the reminder already written. You press send yourself, so nothing goes out automatically.
+      </p>
 
       <form method="get" className="card toolbar no-print">
         <div className="row">
@@ -60,10 +67,22 @@ export default async function DefaultersPage({
               <tr>
                 <th>Student</th><th>Class</th><th>Guardian</th>
                 <th className="num">Unpaid fees</th><th className="num">Past due date</th><th className="num">Total due</th>
+                <th className="no-print">Remind</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {rows.map((r) => {
+                const phone = normalizePhone(r.phone);
+                const message = buildReminderMessage({
+                  schoolName: settings.school_name,
+                  guardian: r.guardian,
+                  studentName: r.name,
+                  className: r.className,
+                  totalDue: r.totalDue,
+                  overdue: r.overdue,
+                  upiId: settings.upi_id,
+                });
+                return (
                 <tr key={r.studentId}>
                   <td>
                     <span className="strong">{r.name}</span>
@@ -77,8 +96,19 @@ export default async function DefaultersPage({
                   <td className="num">{r.feesCount}</td>
                   <td className="num">{r.overdue > 0 ? <span className="badge bad">{inr(r.overdue)}</span> : "-"}</td>
                   <td className="num strong">{inr(r.totalDue)}</td>
+                  <td className="no-print">
+                    {phone ? (
+                      <div className="row tight">
+                        <a className="btn ghost small" href={whatsappLink(phone, message)} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                        <a className="btn ghost small" href={smsLink(phone, message)}>SMS</a>
+                      </div>
+                    ) : (
+                      <span className="cell-sub">{r.phone ? "Invalid phone number" : "No phone number"}</span>
+                    )}
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

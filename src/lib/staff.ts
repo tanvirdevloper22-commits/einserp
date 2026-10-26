@@ -15,6 +15,7 @@ export type StaffInput = {
   emergency_phone: string;
   profile_id: string;
   class_teacher_of: string;
+  monthly_salary: string;
   status: string;
   notes: string;
 };
@@ -38,6 +39,7 @@ export const EMPTY_STAFF: StaffInput = {
   emergency_phone: "",
   profile_id: "",
   class_teacher_of: "",
+  monthly_salary: "",
   status: "active",
   notes: "",
 };

@@ -20,7 +20,7 @@ export default async function EditStaffPage({ params }: { params: Promise<{ id: 
 
   const initial = { ...EMPTY_STAFF };
   for (const key of Object.keys(EMPTY_STAFF) as (keyof StaffInput)[]) {
-    initial[key] = (row[key] as string | null) ?? EMPTY_STAFF[key];
+    initial[key] = row[key] == null ? EMPTY_STAFF[key] : String(row[key]);
   }
 
   const { classOptions, accountOptions } = await getStaffFormOptions(id);

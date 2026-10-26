@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { todayISO } from "@/lib/dates";
 import { readStaffForm, type StaffFormState } from "@/lib/staff";
+import { parseMoney } from "@/lib/payroll";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -16,6 +17,9 @@ function explain(message: string): string {
   if (/staff_employee_no_key/i.test(message)) return "Another staff member already has this employee number.";
   if (/staff_profile_id_key/i.test(message)) return "That login account is already linked to another staff member.";
   if (/staff_class_teacher_of_key/i.test(message)) return "That class already has a class teacher. Remove them from it first.";
+  if (/monthly_salary/i.test(message)) {
+    return "The database is missing the salary field. Run supabase/014_payroll.sql in the Supabase SQL Editor first.";
+  }
   if (/relation .*staff.* does not exist|schema cache/i.test(message)) {
     return "The staff table is missing. Run supabase/012_staff.sql in the Supabase SQL Editor first.";
   }
@@ -44,6 +48,8 @@ export async function saveStaff(id: string | null, _prev: StaffFormState, formDa
   if (v.profile_id && !UUID.test(v.profile_id)) return bad("Choose a login account from the list.");
   if (v.class_teacher_of && !UUID.test(v.class_teacher_of)) return bad("Choose a class from the list.");
   if (v.class_teacher_of && v.staff_type !== "teaching") return bad("Only teaching staff can be a class teacher.");
+  const salary = parseMoney(v.monthly_salary);
+  if (salary === null) return bad("Enter the monthly salary as a number, like 25000 or 25000.50.");
 
   const row = {
     employee_no: v.employee_no,
@@ -62,6 +68,7 @@ export async function saveStaff(id: string | null, _prev: StaffFormState, formDa
     emergency_phone: v.emergency_phone || null,
     profile_id: v.profile_id || null,
     class_teacher_of: v.class_teacher_of || null,
+    monthly_salary: v.monthly_salary ? salary : null,
     status: v.status,
     left_on: v.status === "left" ? todayISO() : null,
     notes: v.notes || null,

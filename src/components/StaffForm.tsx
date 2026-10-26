@@ -117,6 +117,10 @@ export default function StaffForm({ action, initial, classOptions, accountOption
             </select>
           </div>
           <div>
+            <label htmlFor="monthly_salary">Monthly salary (₹)</label>
+            <input id="monthly_salary" name="monthly_salary" type="number" min="0" step="0.01" inputMode="decimal" defaultValue={v.monthly_salary} placeholder="e.g. 25000" />
+          </div>
+          <div>
             <label htmlFor="status">Status</label>
             <select id="status" name="status" defaultValue={v.status}>
               <option value="active">Active</option>
