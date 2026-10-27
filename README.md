@@ -126,3 +126,10 @@ Run `supabase/016_fee_concessions.sql` in the SQL Editor (after 003 and 004). **
 a percentage off, a fixed amount off, or fully waived, optionally only for fees whose title starts with some text (for example "Tuition"). The page also lists **possible siblings** (active students sharing a guardian phone number).
 A concession is applied when fees are generated (Fee structure) or added (Fees page); the invoice then shows the original amount and the concession. Fees that already exist are not changed. Several concessions on one student are added together, never more than the fee.
 **Late fine:** set a flat fine and grace days, then **Apply late fines now** adds one "Late fine - <fee>" for each unpaid fee that is past its due date plus the grace days. A fee is fined only once and fines are never fined again.
+
+## Year-end promotion (migration 017)
+
+Run `supabase/017_promotions.sql` in the SQL Editor (after 002). On **Students -> Promote class** (admin only) choose a class, untick any student who should stay (for example detained students),
+choose the class they move to (the next class is suggested, such as Class 5 to Class 6 in the same section) or **Passed out**, and optionally type the new academic session. Passed-out students are marked as having left, so a Transfer Certificate can still be issued.
+Promote the highest class first and work downwards. A student is only moved if still active in that class, every run is saved in the history, and **Undo** puts back the students who have not moved again since.
+Fees for the new session are not created automatically; generate them from Fees -> Fee structure after promoting.

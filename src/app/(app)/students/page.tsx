@@ -55,6 +55,7 @@ export default async function StudentsPage({
         title="Students"
         description={isAdmin ? "Admit new students and manage existing records." : "Student records by class."}
       >
+        {isAdmin && <Link className="btn ghost" href="/promotion">Promote class</Link>}
         {isAdmin && <Link className="btn ghost" href="/students/id-cards">ID cards</Link>}
         {isAdmin && <Link className="btn" href="/students/new">New admission</Link>}
       </PageHeader>
