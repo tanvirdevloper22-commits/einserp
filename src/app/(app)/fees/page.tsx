@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { todayISO, formatDate } from "@/lib/dates";
 import { cleanSearch, pageRange, parsePage } from "@/lib/pagination";
+import { feeAmounts, groupByStudent, type Concession } from "@/lib/concessions";
 import PageHeader from "@/components/PageHeader";
 import Pagination from "@/components/Pagination";
 
@@ -47,9 +48,22 @@ async function addFee(formData: FormData) {
     if (!studentIds.length) fail("That class has no active students.");
   }
 
+  // Apply any concessions the students have (none if migration 016 has not been run).
+  const { data: concRows } = await supabase
+    .from("fee_concessions")
+    .select("student_id, kind, mode, value, applies_to")
+    .eq("active", true)
+    .in("student_id", studentIds);
+  const concessions = groupByStudent(concRows ?? []);
+
   const { error } = await supabase
     .from("fees")
-    .insert(studentIds.map((id) => ({ student_id: id, title, amount, due_date: dueDate })));
+    .insert(studentIds.map((id) => ({
+      student_id: id,
+      title,
+      due_date: dueDate,
+      ...feeAmounts(title, amount, (concessions.get(id) ?? []) as Concession[]),
+    })));
   if (error) fail(`The fee could not be saved: ${error.message}`);
 
   revalidatePath("/fees");
@@ -138,6 +152,7 @@ export default async function FeesPage({
       <PageHeader title="Fees" description="Assign fees, collect payments and share invoices.">
         <Link className="btn ghost" href="/fees/payments">Payments</Link>
         <Link className="btn ghost" href="/fees/structure">Fee structure</Link>
+        <Link className="btn ghost" href="/fees/concessions">Concessions</Link>
         <Link className="btn ghost" href="/fees/defaulters">Defaulters</Link>
       </PageHeader>
 

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { feeAmounts, groupByStudent, type Concession } from "@/lib/concessions";
 import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
@@ -56,23 +57,40 @@ async function generateFees(formData: FormData) {
     .in("title", titles);
   const have = new Set((existing ?? []).map((f) => `${f.student_id}|${f.title}`));
 
+  // Concessions given to these students (if migration 016 has not been run, there are none and fees are created as before).
+  const { data: concRows } = await supabase
+    .from("fee_concessions")
+    .select("student_id, kind, mode, value, applies_to")
+    .eq("active", true)
+    .in("student_id", students.map((s) => s.id));
+  const concessions = groupByStudent(concRows ?? []);
+
   const rows = students.flatMap((s) =>
     items
-      .map((i) => ({ student_id: s.id, title: `${i.title} - ${period}`, amount: i.amount, due_date: dueDate }))
+      .map((i) => {
+        const title = `${i.title} - ${period}`;
+        return {
+          student_id: s.id,
+          title,
+          due_date: dueDate,
+          ...feeAmounts(title, Number(i.amount), (concessions.get(s.id) ?? []) as Concession[]),
+        };
+      })
       .filter((r) => !have.has(`${r.student_id}|${r.title}`))
   );
   if (rows.length) {
     const { error } = await supabase.from("fees").insert(rows);
     if (error) redirect(`/fees/structure?error=${encodeURIComponent(error.message)}`);
   }
+  const discounted = rows.filter((r) => "concession_amount" in r).length;
   revalidatePath("/fees");
-  redirect(`/fees/structure?generated=${rows.length}&skipped=${students.length * items.length - rows.length}`);
+  redirect(`/fees/structure?generated=${rows.length}&skipped=${students.length * items.length - rows.length}&discounted=${discounted}`);
 }
 
 export default async function FeeStructurePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; generated?: string; skipped?: string }>;
+  searchParams: Promise<{ error?: string; generated?: string; skipped?: string; discounted?: string }>;
 }) {
   await requireRole([...FEE_ROLES]);
   const sp = await searchParams;
@@ -103,6 +121,7 @@ export default async function FeeStructurePage({
         <div className="notice ok">
           {sp.generated} fee {Number(sp.generated) === 1 ? "entry was" : "entries were"} created
           {Number(sp.skipped) > 0 ? `. ${sp.skipped} already existed and were skipped.` : "."}
+          {Number(sp.discounted) > 0 && ` ${sp.discounted} had a concession applied.`}
         </div>
       )}
 

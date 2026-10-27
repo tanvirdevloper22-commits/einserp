@@ -119,3 +119,10 @@ Run `supabase/015_certificates.sql` in the SQL Editor (after 002). **Certificate
 Start from the Students list (**Certificate** button) or Certificates -> Issue a certificate. A TC asks for the date of and reason for leaving and the conduct, warns if fees are unpaid
 (an admin can still override), and can mark the student as left. The student's details are copied onto the certificate when it is issued, so editing the student later never changes it.
 Each certificate opens as a printable page in your chosen document template.
+
+## Fee concessions and late fine (migration 016)
+
+Run `supabase/016_fee_concessions.sql` in the SQL Editor (after 003 and 004). **Fees -> Concessions** lets an admin give a student a **sibling discount, scholarship, RTE free seat, staff-child** or other concession:
+a percentage off, a fixed amount off, or fully waived, optionally only for fees whose title starts with some text (for example "Tuition"). The page also lists **possible siblings** (active students sharing a guardian phone number).
+A concession is applied when fees are generated (Fee structure) or added (Fees page); the invoice then shows the original amount and the concession. Fees that already exist are not changed. Several concessions on one student are added together, never more than the fee.
+**Late fine:** set a flat fine and grace days, then **Apply late fines now** adds one "Late fine - <fee>" for each unpaid fee that is past its due date plus the grace days. A fee is fined only once and fines are never fined again.

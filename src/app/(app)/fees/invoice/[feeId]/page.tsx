@@ -103,7 +103,13 @@ export default async function InvoicePage({ params }: { params: Promise<{ feeId:
           <table>
             <thead><tr><th>Description</th><th className="num">Amount</th></tr></thead>
             <tbody>
-              <tr><td className="strong">{fee.title}</td><td className="num">{inr(amount)}</td></tr>
+              <tr><td className="strong">{fee.title}</td><td className="num">{inr(fee.gross_amount != null ? Number(fee.gross_amount) : amount)}</td></tr>
+              {Number(fee.concession_amount ?? 0) > 0 && (
+                <tr>
+                  <td>Concession{fee.concession_note ? ` (${fee.concession_note})` : ""}</td>
+                  <td className="num">- {inr(Number(fee.concession_amount))}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
