@@ -13,6 +13,7 @@ async function logout() {
 const links: (NavItem & { roles: Role[] })[] = [
   { href: "/portal", label: "My children", icon: "students", roles: ["parent"] },
   { href: "/attendance/scan", label: "Scan attendance", icon: "attendance", roles: ["attender"] },
+  { href: "/attendance/stats", label: "Today's numbers", icon: "dashboard", roles: ["attender"] },
   { href: "/", label: "Dashboard", icon: "dashboard", roles: STAFF_ROLES },
   { href: "/students", label: "Students", icon: "students", roles: STAFF_ROLES },
   { href: "/attendance", label: "Attendance", icon: "attendance", roles: ["admin", "teacher"] },

@@ -151,3 +151,11 @@ The QR holds the student's id (`EINS:<id>`), so reprinting a card never changes 
 Create a user with the role **attender** (Users → Add a user). After logging in, the attender sees only the scan page, with live numbers on top: total students, present, absent (not scanned yet) and the attendance percentage, plus a class-by-class table. Admins and teachers see the same numbers on the scan page. The attender cannot open any other page or table: scanning and the numbers go through two database functions that return only the student's name and class.
 
 Setup: run `supabase/019_attender.sql` in the Supabase SQL Editor (it adds the role and the two functions).
+
+### Scanner page and numbers page
+
+**Attendance → Scan QR codes** is a dedicated scanner screen made to be left on a phone or tablet by the gate or classroom door, so students can scan their own card: a large camera view with a frame, a big green/blue/red result card with the student's name and class, a beep, and a short list of the latest scans. Use **Back camera / Front camera** to switch cameras, **Full screen** to hide everything else, and **Mark as Present/Late** to choose what a scan records. The screen stays awake while the camera is on, the camera choice is remembered, and the scanner restarts by itself after a reload once the browser has allowed the camera.
+
+**Attendance → Today's numbers** is the separate statistics page: a percentage ring, total, present, absent and a class-by-class table with bars. It refreshes every 20 seconds. Admins and teachers also get **Mark rest absent** there. The attender account sees only these two pages.
+
+Because the scanner is meant for students to use themselves, a student could scan a friend's card. Keep an adult nearby, or use the page only at the gate.
