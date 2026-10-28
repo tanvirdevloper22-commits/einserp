@@ -70,6 +70,7 @@ export default async function AttendancePage({
   return (
     <>
       <PageHeader title="Attendance" description="Choose a class and date, then mark each student.">
+        <Link className="btn ghost" href="/attendance/absent">Absent alerts</Link>
         <Link className="btn ghost" href="/attendance/stats">Today&apos;s numbers</Link>
         <Link className="btn" href="/attendance/scan">Scan QR codes</Link>
       </PageHeader>

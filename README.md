@@ -159,3 +159,11 @@ Setup: run `supabase/019_attender.sql` in the Supabase SQL Editor (it adds the r
 **Attendance → Today's numbers** is the separate statistics page: a percentage ring, total, present, absent and a class-by-class table with bars. It refreshes every 20 seconds. Admins and teachers also get **Mark rest absent** there. The attender account sees only these two pages.
 
 Because the scanner is meant for students to use themselves, a student could scan a friend's card. Keep an adult nearby, or use the page only at the gate.
+
+## Absent alerts
+
+**Attendance → Absent alerts** lists the students marked absent on a date (today by default, filterable by class) with the guardian's name and phone number. **WhatsApp** and **SMS** open the app on your phone or computer with a ready-written message for that parent; you press send yourself, so nothing goes out automatically and no WhatsApp or SMS account is needed. Each press is remembered ("WhatsApp 09:42 by Asha Singh"), so two teachers do not message the same parent twice. If you use QR scanning, press **Mark rest absent** on Today's numbers first, because students with no record are not listed.
+
+Admins can edit the message under the list. `{student}`, `{guardian}`, `{class}`, `{date}` and `{school}` are filled in per student; empty means the default text. Phone numbers are read as Indian numbers (10 digits, or with 0, 91 or +91); students without a usable number show "Add a phone number".
+
+Setup: run `supabase/020_absence_alerts.sql` in the Supabase SQL Editor. The page works without it, but the message text cannot be saved and alerts are not remembered.
