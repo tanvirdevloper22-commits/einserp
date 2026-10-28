@@ -133,3 +133,9 @@ Run `supabase/017_promotions.sql` in the SQL Editor (after 002). On **Students -
 choose the class they move to (the next class is suggested, such as Class 5 to Class 6 in the same section) or **Passed out**, and optionally type the new academic session. Passed-out students are marked as having left, so a Transfer Certificate can still be issued.
 Promote the highest class first and work downwards. A student is only moved if still active in that class, every run is saved in the history, and **Undo** puts back the students who have not moved again since.
 Fees for the new session are not created automatically; generate them from Fees -> Fee structure after promoting.
+
+## Homework
+
+Teachers and admins post homework for a class (optional subject, details and due date) from **Homework** in the sidebar. Parents see the current homework of their child's class on the parent portal: items due soon or recently, with "Due today / tomorrow / in N days" badges. Teachers can delete their own homework; admins can delete any.
+
+Setup: run `supabase/018_homework.sql` in the Supabase SQL Editor.
