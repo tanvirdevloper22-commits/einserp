@@ -12,6 +12,7 @@ async function logout() {
 
 const links: (NavItem & { roles: Role[] })[] = [
   { href: "/portal", label: "My children", icon: "students", roles: ["parent"] },
+  { href: "/attendance/scan", label: "Scan attendance", icon: "attendance", roles: ["attender"] },
   { href: "/", label: "Dashboard", icon: "dashboard", roles: STAFF_ROLES },
   { href: "/students", label: "Students", icon: "students", roles: STAFF_ROLES },
   { href: "/attendance", label: "Attendance", icon: "attendance", roles: ["admin", "teacher"] },
@@ -51,7 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <main className="main">
-        {isStaff || profile.role === "parent" ? (
+        {isStaff || profile.role === "parent" || profile.role === "attender" ? (
           children
         ) : (
           <div className="card" style={{ maxWidth: 520 }}>

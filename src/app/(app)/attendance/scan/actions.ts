@@ -4,45 +4,73 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { todayISO } from "@/lib/dates";
-import { parseStudentQr, type ScanResult } from "@/lib/qr-attendance";
+import { parseStudentQr, type ClassStat, type ScanResult } from "@/lib/qr-attendance";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 /**
- * Marks the student whose QR code was scanned as present (or late) for today.
- * Already present/late stays as it is, a student on leave is left alone, and an absent mark is corrected.
+ * Marks the student whose QR code was scanned as present (or late) for today. The work is done by a database function
+ * so the gate attender needs no access to the tables. Already present/late stays as it is, a student on leave is left
+ * alone, and an absent mark is corrected.
  */
 export async function scanAttendance(text: string, mode: "present" | "late"): Promise<ScanResult> {
-  await requireRole(["admin", "teacher"]);
+  await requireRole(["admin", "teacher", "attender"]);
   const id = parseStudentQr(String(text ?? "").slice(0, 200));
   if (!id) return { ok: false, kind: "error", message: "This is not a student ID card QR code." };
-  const status = mode === "late" ? "late" : "present";
 
   const supabase = await createClient();
-  const { data: s, error } = await supabase
-    .from("students")
-    .select("id, full_name, admission_no, status, classes(name, section)")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) return { ok: false, kind: "error", message: error.message };
-  if (!s) return { ok: false, kind: "error", message: "No student found for this card." };
-  const cls = one(s.classes);
-  const who = { name: s.full_name, admissionNo: s.admission_no, className: cls ? `${cls.name} - ${cls.section}` : "No class" };
-  if (s.status !== "active") return { ok: false, kind: "error", message: "This student has left the school.", ...who };
+  const { data, error } = await supabase.rpc("scan_attendance_mark", { p_student: id, p_status: mode === "late" ? "late" : "present" });
+  if (error) {
+    return {
+      ok: false,
+      kind: "error",
+      message: /scan_attendance_mark|schema cache|does not exist/i.test(error.message)
+        ? "Scanning is not set up yet. Run supabase/019_attender.sql in the Supabase SQL Editor first."
+        : error.message,
+    };
+  }
+  const r = (data ?? {}) as { kind?: string; name?: string; admission_no?: string; class?: string; status?: string };
+  const who = { name: r.name, admissionNo: r.admission_no, className: r.class };
+  switch (r.kind) {
+    case "marked":
+      revalidatePath("/attendance");
+      return { ok: true, kind: "marked", message: `Marked ${r.status}.`, status: r.status, ...who };
+    case "already":
+      return { ok: true, kind: "already", message: `Already marked ${r.status} today.`, status: r.status, ...who };
+    case "leave":
+      return { ok: false, kind: "leave", message: "Marked on leave today, so it was not changed.", status: "leave", ...who };
+    case "left":
+      return { ok: false, kind: "error", message: "This student has left the school.", ...who };
+    case "notfound":
+      return { ok: false, kind: "error", message: "No student found for this card." };
+    default:
+      return { ok: false, kind: "error", message: "Unexpected answer from the database." };
+  }
+}
 
-  const date = todayISO();
-  const { data: existing } = await supabase.from("attendance").select("status").eq("student_id", id).eq("date", date).maybeSingle();
-  if (existing?.status === "present" || existing?.status === "late") {
-    return { ok: true, kind: "already", message: `Already marked ${existing.status} today.`, status: existing.status, ...who };
+/** Today's numbers for every class, for the live panel on the scan page. */
+export async function getTodayStats(): Promise<{ rows: ClassStat[]; error?: string }> {
+  await requireRole(["admin", "teacher", "attender"]);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("attendance_today");
+  if (error) {
+    return {
+      rows: [],
+      error: /attendance_today|schema cache|does not exist/i.test(error.message)
+        ? "Run supabase/019_attender.sql in the Supabase SQL Editor to see today's numbers."
+        : error.message,
+    };
   }
-  if (existing?.status === "leave") {
-    return { ok: false, kind: "leave", message: "Marked on leave today, so it was not changed.", status: "leave", ...who };
-  }
-  const { error: saveError } = await supabase.from("attendance").upsert({ student_id: id, date, status }, { onConflict: "student_id,date" });
-  if (saveError) return { ok: false, kind: "error", message: saveError.message, ...who };
-  revalidatePath("/attendance");
-  return { ok: true, kind: "marked", message: `Marked ${status}.`, status, ...who };
+  const rows = ((data ?? []) as { cls_id: string | null; cls_name: string | null; cls_section: string | null; total: number; present: number; late: number; on_leave: number; absent_marked: number }[]).map((r) => ({
+    classId: r.cls_id,
+    label: r.cls_name ? `${r.cls_name} - ${r.cls_section}` : "No class",
+    total: r.total,
+    present: r.present,
+    late: r.late,
+    onLeave: r.on_leave,
+    absentMarked: r.absent_marked,
+  }));
+  return { rows };
 }
 
 /** Counts the active students of a class that have no attendance saved for today. */

@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import jsQR from "jsqr";
-import type { ScanResult } from "@/lib/qr-attendance";
-import { scanAttendance, markRestAbsent, countUnmarked } from "./actions";
+import { totalsOf, type ClassStat, type ScanResult } from "@/lib/qr-attendance";
+import { scanAttendance, markRestAbsent, countUnmarked, getTodayStats } from "./actions";
 
 type Entry = ScanResult & { at: string };
 
@@ -19,7 +19,7 @@ function beep(ok: boolean) {
   } catch {}
 }
 
-export default function Scanner({ classes }: { classes: { id: string; name: string; section: string }[] }) {
+export default function Scanner({ classes, canFinish }: { classes: { id: string; name: string; section: string }[]; canFinish: boolean }) {
   const [mode, setMode] = useState<"present" | "late">("present");
   const [last, setLast] = useState<Entry | null>(null);
   const [log, setLog] = useState<Entry[]>([]);
@@ -29,6 +29,21 @@ export default function Scanner({ classes }: { classes: { id: string; name: stri
   const [classId, setClassId] = useState("");
   const [rest, setRest] = useState("");
   const [typed, setTyped] = useState("");
+  const [stats, setStats] = useState<ClassStat[] | null>(null);
+  const [statsError, setStatsError] = useState("");
+
+  const refreshStats = useCallback(async () => {
+    try {
+      const r = await getTodayStats();
+      setStats(r.rows);
+      setStatsError(r.error ?? "");
+    } catch {}
+  }, []);
+  useEffect(() => {
+    refreshStats();
+    const t = setInterval(refreshStats, 30000);
+    return () => clearInterval(t);
+  }, [refreshStats]);
 
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -53,6 +68,7 @@ export default function Scanner({ classes }: { classes: { id: string; name: stri
         setLast(entry);
         setLog((l) => [entry, ...l].slice(0, 30));
         beep(r.ok);
+        refreshStats();
       } catch {
         setLast({ ok: false, kind: "error", message: "Could not reach the server. Check the internet connection.", at: "" });
         beep(false);
@@ -60,7 +76,7 @@ export default function Scanner({ classes }: { classes: { id: string; name: stri
         inFlight.current = false;
       }
     });
-  }, []);
+  }, [refreshStats]);
 
   const stop = useCallback(() => {
     cancelAnimationFrame(raf.current);
@@ -111,8 +127,18 @@ export default function Scanner({ classes }: { classes: { id: string; name: stri
 
   const tone = !last ? "" : last.kind === "marked" ? "ok" : last.kind === "already" ? "info" : "bad";
 
+  const totals = totalsOf(stats ?? []);
+
   return (
     <>
+      <div className="grid stats" style={{ marginBottom: 16 }}>
+        <div className="card stat"><span className="label">Students</span><span className="value">{stats ? totals.total : "-"}</span></div>
+        <div className="card stat"><span className="label">Present</span><span className="value">{stats ? totals.here : "-"}</span><span className="hint">{stats && totals.late ? `${totals.late} of them late` : "scanned today"}</span></div>
+        <div className="card stat"><span className="label">Absent</span><span className="value">{stats ? totals.absent : "-"}</span><span className="hint">{stats && totals.onLeave ? `not scanned yet, plus ${totals.onLeave} on leave` : "not scanned yet"}</span></div>
+        <div className="card stat"><span className="label">Attendance</span><span className="value">{stats ? `${totals.percent}%` : "-"}</span><span className="hint">present out of all students</span></div>
+      </div>
+      {statsError && <div className="notice info" style={{ marginBottom: 16 }}>{statsError}</div>}
+
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
           <div>
@@ -165,6 +191,7 @@ export default function Scanner({ classes }: { classes: { id: string; name: stri
         </div>
       )}
 
+      {canFinish && (
       <div className="card" style={{ marginBottom: 16 }}>
         <h2 style={{ marginTop: 0 }}>Finish a class</h2>
         <p className="sub" style={{ marginTop: -6 }}>When everyone has been scanned, mark the students of a class who were not scanned as absent. Saved records are never changed.</p>
@@ -195,6 +222,32 @@ export default function Scanner({ classes }: { classes: { id: string; name: stri
         </div>
         {rest && <div className="notice info" style={{ marginTop: 12 }}>{rest}</div>}
       </div>
+      )}
+
+      {stats && stats.length > 0 && (
+        <details className="card flush" style={{ marginBottom: 16 }}>
+          <summary style={{ padding: "14px 16px", cursor: "pointer", fontWeight: 600 }}>Class by class</summary>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Class</th><th className="num">Students</th><th className="num">Present</th><th className="num">Absent</th><th className="num">Attendance</th></tr></thead>
+              <tbody>
+                {stats.map((r) => {
+                  const t = totalsOf([r]);
+                  return (
+                    <tr key={r.classId ?? "none"}>
+                      <td className="strong">{r.label}</td>
+                      <td className="num">{t.total}</td>
+                      <td className="num">{t.here}</td>
+                      <td className="num">{t.absent}</td>
+                      <td className="num">{t.percent}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
 
       {log.length > 0 && (
         <div className="card flush">

@@ -28,3 +28,33 @@ export type ScanResult = {
   admissionNo?: string;
   status?: string;
 };
+
+/** One class's numbers for today, from the attendance_today() database function. */
+export type ClassStat = {
+  classId: string | null;
+  label: string;
+  total: number;
+  present: number;
+  late: number;
+  onLeave: number;
+  absentMarked: number;
+};
+
+export type DayTotals = {
+  total: number;
+  /** present + late */
+  here: number;
+  late: number;
+  onLeave: number;
+  /** Everyone who is not here and not on leave: marked absent or not scanned yet. */
+  absent: number;
+  /** Share of all active students who are here, 0 to 100 with one decimal. */
+  percent: number;
+};
+
+export function totalsOf(rows: Pick<ClassStat, "total" | "present" | "late" | "onLeave">[]): DayTotals {
+  let total = 0, present = 0, late = 0, onLeave = 0;
+  for (const r of rows) { total += r.total; present += r.present; late += r.late; onLeave += r.onLeave; }
+  const here = present + late;
+  return { total, here, late, onLeave, absent: Math.max(0, total - here - onLeave), percent: total ? Math.round((here / total) * 1000) / 10 : 0 };
+}

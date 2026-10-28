@@ -2,7 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export type Role = "pending" | "admin" | "accountant" | "teacher" | "parent";
+export type Role = "pending" | "admin" | "accountant" | "teacher" | "parent" | "attender";
 
 export const STAFF_ROLES: Role[] = ["admin", "accountant", "teacher"];
 

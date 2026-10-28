@@ -16,6 +16,7 @@ export default async function Dashboard() {
   // No requireRole here: a wrong-role redirect lands on this page, so guarding it would loop.
   const { role, fullName } = await getProfile();
   if (role === "parent") redirect("/portal");
+  if (role === "attender") redirect("/attendance/scan");
   const supabase = await createClient();
   const today = todayISO();
 

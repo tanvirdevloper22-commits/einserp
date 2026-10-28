@@ -10,8 +10,8 @@ import ConfirmButton from "@/components/ConfirmButton";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Users" };
 
-const ROLES = ["pending", "admin", "accountant", "teacher", "parent"] as const;
-const ASSIGNABLE = ["admin", "accountant", "teacher", "parent"] as const;
+const ROLES = ["pending", "admin", "accountant", "teacher", "parent", "attender"] as const;
+const ASSIGNABLE = ["admin", "accountant", "teacher", "parent", "attender"] as const;
 const MIN_PASSWORD = 8;
 
 const fail = (message: string): never => redirect(`/users?error=${encodeURIComponent(message)}`);

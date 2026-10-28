@@ -8,15 +8,17 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Scan attendance" };
 
 export default async function ScanPage() {
-  await requireRole(["admin", "teacher"]);
+  const me = await requireRole(["admin", "teacher", "attender"]);
+  const canFinish = me.role !== "attender";
   const supabase = await createClient();
-  const { data: classes } = await supabase.from("classes").select("id, name, section").order("name").order("section");
+  // The gate attender has no access to the class list; only admins and teachers use "Mark rest absent".
+  const classes = canFinish ? ((await supabase.from("classes").select("id, name, section").order("name").order("section")).data ?? []) : [];
   return (
     <>
       <PageHeader title="Scan attendance" description="Scan the QR code on a student ID card to mark that student present for today.">
-        <Link className="btn ghost" href="/attendance">Back to attendance</Link>
+        {canFinish && <Link className="btn ghost" href="/attendance">Back to attendance</Link>}
       </PageHeader>
-      <Scanner classes={classes ?? []} />
+      <Scanner classes={classes} canFinish={canFinish} />
     </>
   );
 }

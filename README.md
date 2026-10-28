@@ -144,4 +144,10 @@ Setup: run `supabase/018_homework.sql` in the Supabase SQL Editor.
 
 Every student ID card now carries a QR code on the back (Students → ID cards). Open **Attendance → Scan QR codes**, start the phone or laptop camera, and hold a card in front of it: the student is marked present for today (or late, if you pick that), with a beep and the name on screen. A USB barcode/QR scanner also works: click the code box and scan. Students already marked present stay as they are, a student on leave is left alone, and an absent mark is corrected to present. When the class has been scanned, **Mark rest absent** marks everyone with no record as absent without touching saved records.
 
-The QR holds the student's id (`EINS:<id>`), so reprinting a card never changes it. No migration is needed. The camera needs the site to be opened over https (Vercel does this) and the browser's camera permission.
+The QR holds the student's id (`EINS:<id>`), so reprinting a card never changes it. The camera needs the site to be opened over https (Vercel does this) and the browser's camera permission.
+
+### Attender (gate) account
+
+Create a user with the role **attender** (Users → Add a user). After logging in, the attender sees only the scan page, with live numbers on top: total students, present, absent (not scanned yet) and the attendance percentage, plus a class-by-class table. Admins and teachers see the same numbers on the scan page. The attender cannot open any other page or table: scanning and the numbers go through two database functions that return only the student's name and class.
+
+Setup: run `supabase/019_attender.sql` in the Supabase SQL Editor (it adds the role and the two functions).
