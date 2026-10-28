@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { STUDENT_BUCKET } from "@/lib/students";
 import PageHeader from "@/components/PageHeader";
+import { studentQrDataUrl } from "@/lib/qr-attendance";
 import { mirrorRows, toSheets } from "@/lib/idcards";
 import PrintButton from "@/components/PrintButton";
 import { IdCardFront, IdCardBack, type IdCardStudent, type IdCardSchool } from "@/components/IdCard";
@@ -53,7 +54,8 @@ export default async function IdCardsPage({
       });
     }
 
-    students = rows.map((r) => {
+    const qrs = await Promise.all(rows.map((r) => studentQrDataUrl(r.id)));
+    students = rows.map((r, i) => {
       const cls = one(r.classes);
       return {
         id: r.id,
@@ -66,6 +68,7 @@ export default async function IdCardsPage({
         address: r.address,
         className: cls ? `Class ${cls.name.replace(/^class\s*/i, "")} - ${cls.section}` : "",
         photoUrl: r.photo_path ? urls.get(r.photo_path) ?? null : null,
+        qr: qrs[i],
       };
     });
   }

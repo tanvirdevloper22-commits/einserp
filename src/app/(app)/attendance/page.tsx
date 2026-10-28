@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
@@ -68,7 +69,9 @@ export default async function AttendancePage({
 
   return (
     <>
-      <PageHeader title="Attendance" description="Choose a class and date, then mark each student." />
+      <PageHeader title="Attendance" description="Choose a class and date, then mark each student.">
+        <Link className="btn" href="/attendance/scan">Scan QR codes</Link>
+      </PageHeader>
 
       <form method="get" className="card toolbar">
         <div className="row">

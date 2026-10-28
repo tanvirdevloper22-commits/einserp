@@ -139,3 +139,9 @@ Fees for the new session are not created automatically; generate them from Fees 
 Teachers and admins post homework for a class (optional subject, details and due date) from **Homework** in the sidebar. Parents see the current homework of their child's class on the parent portal: items due soon or recently, with "Due today / tomorrow / in N days" badges. Teachers can delete their own homework; admins can delete any.
 
 Setup: run `supabase/018_homework.sql` in the Supabase SQL Editor.
+
+## QR attendance
+
+Every student ID card now carries a QR code on the back (Students → ID cards). Open **Attendance → Scan QR codes**, start the phone or laptop camera, and hold a card in front of it: the student is marked present for today (or late, if you pick that), with a beep and the name on screen. A USB barcode/QR scanner also works: click the code box and scan. Students already marked present stay as they are, a student on leave is left alone, and an absent mark is corrected to present. When the class has been scanned, **Mark rest absent** marks everyone with no record as absent without touching saved records.
+
+The QR holds the student's id (`EINS:<id>`), so reprinting a card never changes it. No migration is needed. The camera needs the site to be opened over https (Vercel does this) and the browser's camera permission.

@@ -425,7 +425,9 @@ textarea { resize: vertical; }
 .idc-back-school { margin-top: 1mm; font-size: 8pt; font-weight: 700; line-height: 1.2; }
 .idc-back-text { margin-top: 0.7mm; font-size: 6.3pt; color: #3b475a; overflow-wrap: anywhere; }
 .idc-back-details { margin-top: 3.5mm; padding-top: 2mm; border-top: 0.2mm solid #d8dde6; }
-.idc-sign { margin-top: auto; margin-bottom: 2.5mm; padding-top: 7mm; text-align: center; font-size: 6pt; color: #5b667a; }
+.idc-qr { margin-top: 2.5mm; display: flex; justify-content: center; }
+.idc-qr img { width: 20mm; height: 20mm; display: block; image-rendering: pixelated; }
+.idc-sign { margin-top: auto; margin-bottom: 2.5mm; padding-top: 3mm; text-align: center; font-size: 6pt; color: #5b667a; }
 .idc-sign-line { border-top: 0.2mm solid #121f2f; margin: 0 5mm 0.8mm; }
 .idc-back .idc-foot { margin-top: 0; }
 

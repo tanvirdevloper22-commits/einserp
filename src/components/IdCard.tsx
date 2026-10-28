@@ -11,6 +11,7 @@ export type IdCardStudent = {
   address: string | null;
   className: string;
   photoUrl: string | null;
+  qr?: string | null;
 };
 
 export type IdCardSchool = {
@@ -92,6 +93,13 @@ export function IdCardBack({ student, school }: { student: IdCardStudent; school
           <dd className="idc-clamp">{student.address || "-"}</dd>
         </div>
       </dl>
+
+      {student.qr && (
+        <div className="idc-qr">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={student.qr} alt="Attendance QR code" />
+        </div>
+      )}
 
       <div className="idc-sign">
         <div className="idc-sign-line" />
