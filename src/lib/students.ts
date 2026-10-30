@@ -30,7 +30,14 @@ export type StudentInput = {
   id_proof_type: string;
   id_proof_number: string;
   status: string;
+  social_category: string;
+  is_rte: string;
+  is_bpl: string;
+  is_cwsn: string;
+  mother_tongue: string;
 };
+
+export const SOCIAL_CATEGORIES = ["General", "OBC", "SC", "ST", "EWS"] as const;
 
 export const PHOTO_PATH = (id: string) => `photos/${id}.jpg`;
 export const ID_PROOF_PATH = (id: string, ext: "jpg" | "pdf") => `id-proofs/${id}.${ext}`;
@@ -41,6 +48,7 @@ export function emptyStudent(): StudentInput {
     blood_group: "", previous_school: "", father_name: "", mother_name: "", guardian_name: "",
     guardian_phone: "", alternate_phone: "", guardian_email: "", address: "",
     id_proof_type: "", id_proof_number: "", status: "active",
+    social_category: "", is_rte: "", is_bpl: "", is_cwsn: "", mother_tongue: "",
   };
 }
 
@@ -51,6 +59,8 @@ export function studentToInput(row: Record<string, unknown>): StudentInput {
     const v = row[key];
     base[key] = v === null || v === undefined ? "" : String(v);
   }
+  // The yes/no fields are stored as true/false in the database and edited as "yes" or "".
+  for (const k of ["is_rte", "is_bpl", "is_cwsn"] as const) base[k] = row[k] === true ? "yes" : "";
   if (!base.status) base.status = "active";
   return base;
 }

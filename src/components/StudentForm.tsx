@@ -9,6 +9,7 @@ import { saveStudent, attachStudentFiles } from "@/app/(app)/students/actions";
 import {
   BLOOD_GROUPS,
   ID_PROOF_TYPES,
+  SOCIAL_CATEGORIES,
   STUDENT_BUCKET,
   PHOTO_PATH,
   ID_PROOF_PATH,
@@ -25,11 +26,13 @@ type Props = {
   currentPhotoUrl?: string | null;
   currentIdProofUrl?: string | null;
   today: string;
+  /** The enquiry this admission comes from, if any. Saving closes that enquiry. */
+  enquiryId?: string;
 };
 
 const MAX_PDF_BYTES = 5 * 1024 * 1024;
 
-export default function StudentForm({ mode, classes, initial, studentId, currentPhotoUrl, currentIdProofUrl, today }: Props) {
+export default function StudentForm({ mode, classes, initial, studentId, currentPhotoUrl, currentIdProofUrl, today, enquiryId }: Props) {
   const router = useRouter();
   const idRef = useRef(studentId ?? "");
   const savedRef = useRef(mode === "update");
@@ -84,11 +87,16 @@ export default function StudentForm({ mode, classes, initial, studentId, current
       id_proof_type: get("id_proof_type"),
       id_proof_number: get("id_proof_number"),
       status: get("status") || "active",
+      social_category: get("social_category"),
+      is_rte: fd.get("is_rte") ? "yes" : "",
+      is_bpl: fd.get("is_bpl") ? "yes" : "",
+      is_cwsn: fd.get("is_cwsn") ? "yes" : "",
+      mother_tongue: get("mother_tongue"),
     };
 
     const id = idRef.current;
     setBusy("Saving details...");
-    const saved = await saveStudent(savedRef.current ? "update" : "create", id, input);
+    const saved = await saveStudent(savedRef.current ? "update" : "create", id, input, enquiryId);
     if ("error" in saved) {
       setBusy(null);
       return setError(saved.error);
@@ -204,6 +212,26 @@ export default function StudentForm({ mode, classes, initial, studentId, current
       </div>
 
       <div className="card">
+        <h2>Category and welfare</h2>
+        <p className="sub" style={{ marginTop: -6 }}>Used for RTE (25% quota) records and government reports. Optional.</p>
+        <div className="form-grid">
+          <div>
+            <label htmlFor="social_category">Social category</label>
+            <select id="social_category" name="social_category" defaultValue={initial.social_category}>
+              <option value="">Not given</option>
+              {SOCIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <Field id="mother_tongue" label="Mother tongue" defaultValue={initial.mother_tongue} />
+        </div>
+        <div className="row" style={{ gap: 24, marginTop: 12, flexWrap: "wrap" }}>
+          <Check name="is_rte" label="Admitted under RTE quota" defaultChecked={initial.is_rte === "yes"} />
+          <Check name="is_bpl" label="Below poverty line (BPL)" defaultChecked={initial.is_bpl === "yes"} />
+          <Check name="is_cwsn" label="Child with special needs (CWSN)" defaultChecked={initial.is_cwsn === "yes"} />
+        </div>
+      </div>
+
+      <div className="card">
         <h2>Photo and ID proof</h2>
         <div className="upload-grid">
           <div>
@@ -274,5 +302,13 @@ function Field({
       <label htmlFor={id}>{label}{required && " *"}</label>
       <input id={id} name={id} type={type} required={required} defaultValue={defaultValue ?? ""} />
     </div>
+  );
+}
+
+function Check({ name, label, defaultChecked }: { name: string; label: string; defaultChecked?: boolean }) {
+  return (
+    <label style={{ display: "flex", gap: 8, alignItems: "center", margin: 0 }}>
+      <input type="checkbox" name={name} defaultChecked={defaultChecked} style={{ width: "auto", minHeight: 0 }} /> {label}
+    </label>
   );
 }

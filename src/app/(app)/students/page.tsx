@@ -55,6 +55,11 @@ export default async function StudentsPage({
         title="Students"
         description={isAdmin ? "Admit new students and manage existing records." : "Student records by class."}
       >
+        {isAdmin && (
+          <a className="btn ghost" href={`/students/export?${new URLSearchParams({ ...(classFilter ? { class: classFilter } : {}), ...(search ? { q: search } : {}) }).toString()}`}>
+            Export CSV
+          </a>
+        )}
         {isAdmin && <Link className="btn ghost" href="/promotion">Promote class</Link>}
         {isAdmin && <Link className="btn ghost" href="/students/id-cards">ID cards</Link>}
         {isAdmin && <Link className="btn" href="/students/new">New admission</Link>}

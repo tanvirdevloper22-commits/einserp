@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { todayISO } from "@/lib/dates";
-import { STUDENT_BUCKET, PHOTO_PATH, ID_PROOF_PATH, type StudentInput } from "@/lib/students";
+import { STUDENT_BUCKET, PHOTO_PATH, ID_PROOF_PATH, SOCIAL_CATEGORIES, type StudentInput } from "@/lib/students";
 
 type Result = { ok: true } | { error: string };
 
@@ -13,8 +13,8 @@ const PHONE = /^[0-9+\-\s]{7,15}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Creates (mode "create") or updates (mode "update") a student. The id is generated in the browser so files can be named after it. */
-export async function saveStudent(mode: "create" | "update", id: string, input: StudentInput): Promise<Result> {
-  await requireRole(["admin"]);
+export async function saveStudent(mode: "create" | "update", id: string, input: StudentInput, enquiryId?: string): Promise<Result> {
+  const me = await requireRole(["admin"]);
   if (!UUID.test(id)) return { error: "Something went wrong with this form. Reload the page and try again." };
 
   const t = (v: string) => (v ?? "").trim();
@@ -37,7 +37,13 @@ export async function saveStudent(mode: "create" | "update", id: string, input: 
     id_proof_type: t(input.id_proof_type) || null,
     id_proof_number: t(input.id_proof_number) || null,
     status: input.status === "left" ? "left" : "active",
+    social_category: t(input.social_category) || null,
+    is_rte: input.is_rte === "yes",
+    is_bpl: input.is_bpl === "yes",
+    is_cwsn: input.is_cwsn === "yes",
+    mother_tongue: t(input.mother_tongue) || null,
   };
+  if (row.social_category && !(SOCIAL_CATEGORIES as readonly string[]).includes(row.social_category)) return { error: "Choose a valid category." };
 
   if (!row.admission_no) return { error: "Enter the admission number." };
   if (!row.full_name) return { error: "Enter the student's full name." };
@@ -61,13 +67,26 @@ export async function saveStudent(mode: "create" | "update", id: string, input: 
 
   if (error) {
     if (error.code === "23505") return { error: `Admission number ${row.admission_no} is already used by another student.` };
+    if (/social_category|is_rte|is_bpl|is_cwsn|mother_tongue/i.test(error.message)) {
+      return { error: "The database is missing the category fields. Run supabase/023_enquiries_and_categories.sql in the Supabase SQL Editor first." };
+    }
     if (/column .* does not exist|schema cache/i.test(error.message)) {
       return { error: "The database is missing the new admission fields. Run supabase/005_admission_files.sql in the Supabase SQL Editor first." };
     }
     return { error: error.message };
   }
 
+  // An admission that came from an enquiry closes that enquiry. This is best effort: the student is already saved.
+  if (mode === "create" && enquiryId && UUID.test(enquiryId)) {
+    const { data: enq } = await supabase.from("enquiries").select("status").eq("id", enquiryId).maybeSingle();
+    if (enq && enq.status !== "admitted") {
+      await supabase.from("enquiries").update({ status: "admitted", student_id: id, updated_at: new Date().toISOString() }).eq("id", enquiryId);
+      await supabase.from("enquiry_notes").insert({ enquiry_id: enquiryId, body: `Admitted as ${row.full_name} (admission no. ${row.admission_no}).`, created_by: me.id, created_by_name: me.fullName || me.email });
+    }
+  }
+
   revalidatePath("/students");
+  revalidatePath("/enquiries");
   return { ok: true };
 }
 

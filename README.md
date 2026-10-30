@@ -190,3 +190,17 @@ Setup: run `supabase/021_exam_schedule.sql` in the Supabase SQL Editor.
 A request can be decided only once; rejecting does not change attendance. Approved leave cannot be undone from this page yet (change the day on the attendance page instead).
 
 Setup: run `supabase/022_leave.sql` in the Supabase SQL Editor (after the staff and staff attendance migrations).
+
+## Admission enquiries, RTE and category fields, student export
+
+**Enquiries** (admin) is a small admission CRM.
+- Record each enquiry: child, class applied for, parent, phone, email, how they reached the school, an optional first note and a follow-up date.
+- The top of the page counts open enquiries, follow-ups due today or overdue (click to filter), admitted and not joining. Filter by status, search by child, parent or phone.
+- Open an enquiry to change its status (New, Contacted, Visit planned, Applied, Admitted, Not joining) and follow-up date, add notes, and send a WhatsApp, SMS or call. Every status change and note is kept in a history.
+- **Admit this student** opens the new admission form with the child, parent, phone, email and class already filled in. Saving the admission marks the enquiry admitted and links it to the student.
+
+**Category and welfare** fields on the admission form: social category (General, OBC, SC, ST, EWS), mother tongue, and tick boxes for RTE quota, BPL and children with special needs (CWSN). Aadhaar numbers are not collected here.
+
+**Export CSV** on the Students page downloads the students (the chosen class and search, or everyone) as a file that opens in Excel, with admission details, parents, address, category, RTE, BPL, CWSN, admission date and status. The ID proof number is left out on purpose. The columns are meant as a starting point for government reports such as UDISE+; check them against the format your board asks for before uploading.
+
+Setup: run `supabase/023_enquiries_and_categories.sql` in the Supabase SQL Editor. Until then, saving a student fails with a message that names this file.

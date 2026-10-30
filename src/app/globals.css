@@ -774,3 +774,14 @@ textarea { resize: vertical; }
   .admit-sheet:last-child { break-after: auto; }
   .admit { max-width: none; border-width: 1.2px; }
 }
+
+/* ---------- Enquiries ---------- */
+.kv { margin: 0; display: grid; gap: 8px; }
+.kv > div { display: flex; gap: 12px; }
+.kv dt { width: 150px; flex: none; color: var(--muted); }
+.kv dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.timeline { list-style: none; margin: 16px 0 0; padding: 0; border-left: 2px solid var(--border); }
+.timeline li { padding: 0 0 14px 14px; position: relative; }
+.timeline li::before { content: ""; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; background: var(--accent); }
+a.card.stat { color: inherit; }
+a.card.stat:hover { border-color: var(--accent); }

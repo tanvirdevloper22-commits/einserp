@@ -132,7 +132,13 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
       {sp.rejected && <div className="notice ok">Leave rejected.</div>}
       {sp.withdrawn && <div className="notice ok">Application withdrawn.</div>}
       {sp.error && <div className="error">{sp.error}</div>}
-      {error && <div className="error">The leave tables are missing. Run supabase/022_leave.sql in the Supabase SQL Editor first.</div>}
+      {error && (
+        <div className="error">
+          {/relationship|schema cache|leave_requests|does not exist/i.test(error.message)
+            ? "The leave tables are missing, or Supabase has not noticed them yet. Run supabase/022_leave.sql, then run: notify pgrst, 'reload schema';"
+            : `The leave list could not be loaded: ${error.message}`}
+        </div>
+      )}
 
       {isParent && (
         <form action={applyStudentLeave} className="card" style={{ marginBottom: 24 }}>
