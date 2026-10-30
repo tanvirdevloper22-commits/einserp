@@ -177,3 +177,16 @@ On **Exams**, each exam now has **Date sheet** and **Admit cards**.
 - **Parents** see an "Exam admit cards" row on the portal and can open and print their own child's card.
 
 Setup: run `supabase/021_exam_schedule.sql` in the Supabase SQL Editor.
+
+## Leave applications
+
+**Leave** in the sidebar, for parents, teachers and admins.
+
+- **Parents** apply for leave for their own child (first and last day, reason; the first day can be up to 14 days back). They see the status of every application (Waiting, Approved, Rejected, with the decision note) and can withdraw one that is still waiting.
+- **Admins and teachers** see the waiting applications and press **Approve** or **Reject** with an optional note. Approving marks "leave" in the student's attendance for each day of the range, except Sundays. Days already marked present or late are left alone.
+- **Teachers** with a linked staff record (Staff page) can also apply for their own leave. Only an admin decides staff leave; approving marks "leave" on the staff attendance, which payroll already counts against the paid-leave allowance. Sundays are skipped so a Sunday never uses up paid leave.
+- **Admins** can **Record staff leave** directly; it is approved immediately.
+
+A request can be decided only once; rejecting does not change attendance. Approved leave cannot be undone from this page yet (change the day on the attendance page instead).
+
+Setup: run `supabase/022_leave.sql` in the Supabase SQL Editor (after the staff and staff attendance migrations).
