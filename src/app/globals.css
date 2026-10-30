@@ -740,3 +740,37 @@ textarea { resize: vertical; }
 .pct-fill.bad { background: var(--bad); }
 .pct-text { width: 48px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 @media (max-width: 520px) { .kiosk-recent li { grid-template-columns: minmax(0, 1fr) auto; } .kiosk-recent-class, .kiosk-recent-time { display: none; } }
+
+/* ---------- Exam admit cards ---------- */
+.admit-sheet { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+.admit { background: #fff; border: 1.5px solid var(--text); padding: 14px 18px; max-width: 760px; font-size: 12.5px; display: flex; flex-direction: column; gap: 9px; break-inside: avoid; }
+.admit-head { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-strong); padding-bottom: 8px; }
+.admit-logo { height: 46px; width: auto; max-width: 70px; object-fit: contain; flex: none; }
+.admit-school h2 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+.admit-school div { color: var(--text-2); font-size: 11.5px; line-height: 1.35; }
+.admit-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--accent, #036cf9); color: #fff; padding: 6px 12px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; font-size: 12px; }
+.admit-title span:last-child { text-transform: none; letter-spacing: 0; }
+.admit-who { display: flex; justify-content: space-between; gap: 14px; }
+.admit-who dl { margin: 0; flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 16px; }
+.admit-who dl > div { display: flex; flex-direction: column; min-width: 0; }
+.admit-who dl > div:first-child { grid-column: 1 / -1; }
+.admit-who dt { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; }
+.admit-who dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.admit-name { font-size: 16px; }
+.admit-photo { width: 78px; height: 96px; flex: none; border: 1px solid var(--border-strong); display: grid; place-items: center; overflow: hidden; background: var(--surface-2); color: var(--muted); font-weight: 700; font-size: 20px; }
+.admit-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.admit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.admit-table th, .admit-table td { border: 1px solid var(--border-strong); padding: 4px 8px; text-align: left; }
+.admit-table th { background: var(--surface-2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.admit-empty { border: 1px dashed var(--border-strong); padding: 10px; text-align: center; color: var(--muted); }
+.admit-rules { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 11px; line-height: 1.4; }
+.admit-sign { display: flex; justify-content: space-between; gap: 24px; margin-top: 14px; font-size: 11px; color: var(--text-2); }
+.admit-sign div { flex: 1; text-align: center; max-width: 200px; }
+.admit-sign span { display: block; border-top: 1px solid var(--text); margin-bottom: 3px; }
+@media print {
+  @page { size: A4; margin: 10mm; }
+  .admit-page .page-head { display: none; }
+  .admit-sheet { gap: 8mm; margin: 0; break-after: page; }
+  .admit-sheet:last-child { break-after: auto; }
+  .admit { max-width: none; border-width: 1.2px; }
+}

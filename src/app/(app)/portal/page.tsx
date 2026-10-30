@@ -50,13 +50,14 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const today = todayISO();
   const monthStart = today.slice(0, 8) + "01";
 
-  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }, { homework }] = await Promise.all([
+  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }, { homework }, { data: recentExams }] = await Promise.all([
     supabase.from("attendance").select("status").eq("student_id", child.id).gte("date", monthStart),
     supabase.from("attendance").select("date, status").eq("student_id", child.id).order("date", { ascending: false }).limit(10),
     supabase.from("fee_balances").select("*").eq("student_id", child.id).order("due_date", { ascending: false, nullsFirst: false }),
     supabase.from("marks").select("exam_id, marks_obtained, max_marks, exams(name, exam_date)").eq("student_id", child.id),
     getNotices({ limit: 3 }),
     child.class_id ? getCurrentHomework(child.class_id) : Promise.resolve({ homework: [], error: null }),
+    supabase.from("exams").select("id, name, exam_date").order("created_at", { ascending: false }).limit(3),
   ]);
 
   const count = (st: string) => (monthRows ?? []).filter((r) => r.status === st).length;
@@ -97,6 +98,17 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
             <Link className="btn ghost small" href="/notices">View all</Link>
           </div>
           <NoticeList notices={latestNotices} />
+        </div>
+      )}
+
+      {(recentExams ?? []).length > 0 && child.class_id && (
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ margin: "0 0 8px" }}>Exam admit cards</h2>
+          <div className="row tight" style={{ flexWrap: "wrap" }}>
+            {(recentExams ?? []).map((e) => (
+              <Link key={e.id} className="btn ghost small" href={`/exams/${e.id}/admit-cards?student=${child.id}`}>{e.name}</Link>
+            ))}
+          </div>
         </div>
       )}
 

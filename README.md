@@ -167,3 +167,13 @@ Because the scanner is meant for students to use themselves, a student could sca
 Admins can edit the message under the list. `{student}`, `{guardian}`, `{class}`, `{date}` and `{school}` are filled in per student; empty means the default text. Phone numbers are read as Indian numbers (10 digits, or with 0, 91 or +91); students without a usable number show "Add a phone number".
 
 Setup: run `supabase/020_absence_alerts.sql` in the Supabase SQL Editor. The page works without it, but the message text cannot be saved and alerts are not remembered.
+
+## Exam date sheet and admit cards
+
+On **Exams**, each exam now has **Date sheet** and **Admit cards**.
+
+- **Date sheet** (admin): add one paper at a time (subject, date, optional start and end time) and tick every class that writes it that day. Adding a subject that is already on a class's sheet updates it. Admins can also set the instructions printed on the cards, one per line; empty uses a standard list.
+- **Admit cards** (admin, teacher): choose a class and print the cards, two to an A4 page, with the school logo and name, exam name and session, student photo, name, class, admission number, date of birth, guardian, the class's date sheet, instructions and signature lines for the class teacher and principal. Students without a photo show their initials. Cards print without paper dates if no date sheet exists yet, and a notice says so.
+- **Parents** see an "Exam admit cards" row on the portal and can open and print their own child's card.
+
+Setup: run `supabase/021_exam_schedule.sql` in the Supabase SQL Editor.

@@ -91,6 +91,8 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
                   <td className="strong">{e.name}</td>
                   <td>{formatDate(e.exam_date)}</td>
                   <td className="num">
+                    <Link className="btn ghost small" href={`/exams/${e.id}/schedule`}>Date sheet</Link>{" "}
+                    <Link className="btn ghost small" href={`/exams/${e.id}/admit-cards`}>Admit cards</Link>{" "}
                     <Link className="btn ghost small" href={`/exams/${e.id}`}>Enter marks</Link>{" "}
                     <Link className="btn ghost small" href={`/exams/${e.id}/results`}>Results</Link>
                   </td>
