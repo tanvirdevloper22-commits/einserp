@@ -23,6 +23,7 @@ const links: (NavItem & { roles: Role[] })[] = [
   { href: "/exams", label: "Exams", icon: "exams", roles: ["admin", "teacher"] },
   { href: "/homework", label: "Homework", icon: "homework", roles: ["admin", "teacher"] },
   { href: "/leave", label: "Leave", icon: "leave", roles: ["admin", "teacher", "parent"] },
+  { href: "/calendar", label: "Calendar", icon: "calendar", roles: ["admin", "teacher", "accountant", "parent"] },
   { href: "/notices", label: "Notices", icon: "notices", roles: [...STAFF_ROLES, "parent"] },
   { href: "/certificates", label: "Certificates", icon: "certificate", roles: ["admin"] },
   { href: "/staff", label: "Staff", icon: "staff", roles: ["admin"] },

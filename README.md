@@ -204,3 +204,11 @@ Setup: run `supabase/022_leave.sql` in the Supabase SQL Editor (after the staff 
 **Export CSV** on the Students page downloads the students (the chosen class and search, or everyone) as a file that opens in Excel, with admission details, parents, address, category, RTE, BPL, CWSN, admission date and status. The ID proof number is left out on purpose. The columns are meant as a starting point for government reports such as UDISE+; check them against the format your board asks for before uploading.
 
 Setup: run `supabase/023_enquiries_and_categories.sql` in the Supabase SQL Editor. Until then, saving a student fails with a message that names this file.
+
+## School calendar
+
+**Calendar** in the sidebar (admin, teacher, accountant and parent). A month grid (Sunday first, with Sundays in red and today highlighted) shows holidays, events, exams and meetings as coloured labels, with Previous, Today and Next to move between months, and a list of the month's entries below it. Admins add an entry (title, type, first and last day, details) and remove it from the list. Multi-day holidays such as a Diwali break are one entry.
+
+Where it shows up elsewhere: the attendance page warns when the chosen date is a holiday, and each parent's portal has a "Coming up" list of the next few entries.
+
+Setup: run `supabase/024_calendar.sql` in the Supabase SQL Editor.

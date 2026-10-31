@@ -8,6 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import NoticeList from "@/components/NoticeList";
 import { getNotices } from "@/lib/notices";
 import { getCurrentHomework } from "@/lib/homework";
+import { KIND_BADGE, KIND_LABEL, rangeLabel, type EventKind } from "@/lib/calendar";
 import HomeworkList from "@/components/HomeworkList";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const today = todayISO();
   const monthStart = today.slice(0, 8) + "01";
 
-  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }, { homework }, { data: recentExams }] = await Promise.all([
+  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }, { homework }, { data: recentExams }, { data: upcoming }] = await Promise.all([
     supabase.from("attendance").select("status").eq("student_id", child.id).gte("date", monthStart),
     supabase.from("attendance").select("date, status").eq("student_id", child.id).order("date", { ascending: false }).limit(10),
     supabase.from("fee_balances").select("*").eq("student_id", child.id).order("due_date", { ascending: false, nullsFirst: false }),
@@ -58,6 +59,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     getNotices({ limit: 3 }),
     child.class_id ? getCurrentHomework(child.class_id) : Promise.resolve({ homework: [], error: null }),
     supabase.from("exams").select("id, name, exam_date").order("created_at", { ascending: false }).limit(3),
+    supabase.from("calendar_events").select("id, title, kind, start_date, end_date").gte("end_date", todayISO()).order("start_date").limit(4),
   ]);
 
   const count = (st: string) => (monthRows ?? []).filter((r) => r.status === st).length;
@@ -98,6 +100,28 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
             <Link className="btn ghost small" href="/notices">View all</Link>
           </div>
           <NoticeList notices={latestNotices} />
+        </div>
+      )}
+
+      {(upcoming ?? []).length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <h2 style={{ margin: 0 }}>Coming up</h2>
+            <Link className="btn ghost small" href="/calendar">Full calendar</Link>
+          </div>
+          <div className="card flush">
+            <table>
+              <tbody>
+                {(upcoming ?? []).map((e) => (
+                  <tr key={e.id}>
+                    <td style={{ width: 150 }}>{rangeLabel(e.start_date as string, e.end_date as string)}</td>
+                    <td className="strong">{e.title}</td>
+                    <td className="num"><span className={`badge ${KIND_BADGE[e.kind as EventKind]}`}>{KIND_LABEL[e.kind as EventKind]}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import PageHeader from "@/components/PageHeader";
-import { todayISO } from "@/lib/dates";
+import { formatDate, todayISO } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Attendance" };
@@ -66,6 +66,9 @@ export default async function AttendancePage({
   }
 
   const marked = students.filter((s) => existing.has(s.id)).length;
+  // A school holiday on this date, if the calendar migration has been run (any error simply means no banner).
+  const { data: hol } = await supabase.from("calendar_events").select("title").eq("kind", "holiday").lte("start_date", date).gte("end_date", date).limit(1);
+  const holiday = hol?.[0]?.title as string | undefined;
 
   return (
     <>
@@ -74,6 +77,8 @@ export default async function AttendancePage({
         <Link className="btn ghost" href="/attendance/stats">Today&apos;s numbers</Link>
         <Link className="btn" href="/attendance/scan">Scan QR codes</Link>
       </PageHeader>
+
+      {holiday && <div className="notice info">{formatDate(date)} is marked as a holiday on the school calendar: {holiday}.</div>}
 
       <form method="get" className="card toolbar">
         <div className="row">

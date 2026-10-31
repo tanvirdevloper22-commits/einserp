@@ -785,3 +785,30 @@ textarea { resize: vertical; }
 .timeline li::before { content: ""; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; background: var(--accent); }
 a.card.stat { color: inherit; }
 a.card.stat:hover { border-color: var(--accent); }
+
+/* ---------- School calendar ---------- */
+.cal-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal-dow > div { padding: 8px 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.cal-day { min-height: 98px; padding: 6px 8px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cal-day:nth-child(7n) { border-right: 0; }
+.cal-day.out { background: var(--surface-2); color: var(--muted); }
+.cal-day.sun .cal-num { color: var(--bad); }
+.cal-day.hol { background: var(--bad-soft); }
+.cal-day.today .cal-num { background: var(--accent); color: #fff; }
+.cal-num { align-self: flex-start; min-width: 24px; height: 24px; display: inline-grid; place-items: center; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cal-chip { display: block; font-size: 11.5px; line-height: 1.3; padding: 1px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+.cal-chip.holiday { border-left-color: var(--bad); background: #fff; color: var(--bad); }
+.cal-chip.exam { border-left-color: #dc6803; background: var(--warn-soft); color: var(--warn); }
+.cal-chip.meeting { border-left-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
+.cal-chip.other { border-left-color: var(--border-strong); background: var(--surface-2); color: var(--text-2); }
+.cal-more { font-size: 11px; color: var(--muted); }
+@media (max-width: 700px) {
+  .cal-day { min-height: 64px; padding: 4px; }
+  .cal-chip { font-size: 0; padding: 0; height: 5px; border-left-width: 0; background: var(--accent); }
+  .cal-chip.holiday { background: var(--bad); }
+  .cal-chip.exam { background: #dc6803; }
+  .cal-chip.meeting { background: var(--ok); }
+  .cal-chip.other { background: var(--border-strong); }
+  .cal-dow > div { padding: 6px 2px; text-align: center; font-size: 10px; }
+}
