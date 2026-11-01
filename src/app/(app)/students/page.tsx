@@ -106,7 +106,7 @@ export default async function StudentsPage({
                       <div className="person">
                         {src ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img className="avatar" src={src} alt="" width={36} height={36} />
+                          <img className="avatar" src={src} alt="" width={38} height={48} />
                         ) : (
                           <span className="avatar" aria-hidden="true">{initials(s.full_name)}</span>
                         )}

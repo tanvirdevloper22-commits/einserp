@@ -242,3 +242,11 @@ No new SQL. Uses the existing row-level rules from migrations 012, 013, 014 and 
 - It needs the login to be linked to a staff record: Staff → open the person → choose the login account. Otherwise the page says so.
 - A salary slip appears only after the admin marks it paid. A draft slip is never visible to the staff member.
 - Salary slips open at `/payroll/slip/<id>` and can be printed; others' slips are blocked by the database, not just the page.
+
+## Admission number prefix
+
+Run `supabase/027_admission_prefix.sql`.
+
+- Settings → Admission number: set a prefix such as `EINS/`. The New admission form then fills in the next number (EINS/0001, EINS/0002, ...). The width of the existing numbers is kept and the admin can still type any number.
+- With no prefix, the next plain number is suggested only if plain numbers already exist.
+- Student photos in the student list are shown whole (portrait box) instead of cropped to a square.

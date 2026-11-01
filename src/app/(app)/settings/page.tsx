@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
+import { cleanPrefix } from "@/lib/admission";
 import { UPI_ID_PATTERN, buildUpiLink, upiQrDataUrl } from "@/lib/upi";
 import PageHeader from "@/components/PageHeader";
 import LogoUpload from "@/components/LogoUpload";
@@ -81,10 +82,28 @@ async function saveTemplates(formData: FormData) {
   redirect("/settings?templates=1");
 }
 
+async function savePrefix(formData: FormData) {
+  "use server";
+  await requireRole(["admin"]);
+  const raw = String(formData.get("admission_prefix") ?? "");
+  const prefix = cleanPrefix(raw);
+  if (raw.trim() !== prefix) fail("The prefix can have up to 12 letters, digits and / _ . - only, with no spaces.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("school_settings").upsert({ id: 1, admission_prefix: prefix || null, updated_at: new Date().toISOString() });
+  if (error) {
+    fail(/admission_prefix|schema cache/.test(error.message)
+      ? "The database is missing the prefix field. Run supabase/027_admission_prefix.sql in the Supabase SQL Editor first."
+      : error.message);
+  }
+  revalidatePath("/settings");
+  revalidatePath("/students/new");
+  redirect("/settings?prefix=1");
+}
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; saved?: string; templates?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; templates?: string; prefix?: string }>;
 }) {
   await requireRole(["admin"]);
   const sp = await searchParams;
@@ -103,11 +122,26 @@ export default async function SettingsPage({
       {sp.error && <div className="error">{sp.error}</div>}
       {sp.saved && <div className="notice ok">Settings saved. New invoices will use these details.</div>}
 
+      {sp.prefix && <div className="notice ok">Admission number prefix saved. New admissions will suggest the next number with it.</div>}
       {sp.templates && <div className="notice ok">Templates saved. They apply to everything you print from now on.</div>}
 
       <div style={{ marginBottom: 16 }}>
         <LogoUpload currentUrl={s.logoUrl} />
       </div>
+
+      <form action={savePrefix} className="card" style={{ marginBottom: 16 }}>
+        <h2>Admission number</h2>
+        <p className="sub" style={{ marginTop: -6 }}>
+          When you add a student, the admission number is filled in for you: this prefix followed by the next number (for example EINS/0001, then EINS/0002). You can still change it on the form. Leave the prefix empty to number from plain numbers only.
+        </p>
+        <div className="row tight" style={{ alignItems: "flex-end" }}>
+          <div>
+            <label htmlFor="admission_prefix">Prefix</label>
+            <input id="admission_prefix" name="admission_prefix" defaultValue={s.admission_prefix} maxLength={12} placeholder="e.g. EINS/ or ADM-26-" pattern="[A-Za-z0-9/_.\-]{0,12}" />
+          </div>
+          <button className="btn">Save prefix</button>
+        </div>
+      </form>
 
       <form action={saveSettings} className="stack">
         <div className="card">

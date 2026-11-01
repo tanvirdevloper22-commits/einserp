@@ -4,6 +4,9 @@ import { requireRole } from "@/lib/auth";
 import { todayISO } from "@/lib/dates";
 import { emptyStudent } from "@/lib/students";
 import { matchClass } from "@/lib/enquiries";
+import { getSettings } from "@/lib/settings";
+import { nextAdmissionNo } from "@/lib/admission";
+import { fetchAll } from "@/lib/late-fines";
 import PageHeader from "@/components/PageHeader";
 import StudentForm from "@/components/StudentForm";
 
@@ -32,6 +35,15 @@ export default async function NewAdmissionPage({ searchParams }: { searchParams:
       initial.class_id = matchClass(enq.class_applied as string | null, classes ?? []);
     }
   }
+
+  // Suggest the next admission number from the prefix in Settings (the admin can still change it on the form).
+  const settings = await getSettings();
+  const prefix = settings.admission_prefix;
+  const like = prefix ? `${prefix.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : "%";
+  const { rows: used } = await fetchAll<{ admission_no: string }>((from, to) =>
+    supabase.from("students").select("admission_no").ilike("admission_no", like).order("admission_no").range(from, to),
+  );
+  initial.admission_no = nextAdmissionNo(used.map((r) => r.admission_no), prefix);
 
   return (
     <>

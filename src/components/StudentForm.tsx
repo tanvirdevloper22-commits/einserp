@@ -153,7 +153,7 @@ export default function StudentForm({ mode, classes, initial, studentId, current
       <div className="card">
         <h2>Student details</h2>
         <div className="form-grid">
-          <Field id="admission_no" label="Admission number" required defaultValue={initial.admission_no} />
+          <Field id="admission_no" label="Admission number" required defaultValue={initial.admission_no} hint={isCreate && initial.admission_no ? "Filled in automatically from Settings. You can change it." : undefined} />
           <Field id="full_name" label="Full name" required defaultValue={initial.full_name} />
           <Field id="admission_date" label="Admission date" type="date" defaultValue={initial.admission_date || today} />
           <div>
@@ -290,8 +290,10 @@ function Field({
   type = "text",
   required,
   defaultValue,
+  hint,
 }: {
   id: keyof StudentInput;
+  hint?: string;
   label: string;
   type?: string;
   required?: boolean;
@@ -301,6 +303,7 @@ function Field({
     <div>
       <label htmlFor={id}>{label}{required && " *"}</label>
       <input id={id} name={id} type={type} required={required} defaultValue={defaultValue ?? ""} />
+      {hint && <span className="cell-sub" style={{ marginTop: 4 }}>{hint}</span>}
     </div>
   );
 }

@@ -19,6 +19,8 @@ export type SchoolSettings = {
   timetable_template: string;
   idcard_template: string;
   accent_color: string;
+  /** Put in front of the suggested admission number, e.g. "EINS/". Empty when not set (or migration 027 not run). */
+  admission_prefix: string;
   /** Public URL of the school logo, or null when none has been uploaded. */
   logoUrl: string | null;
 };
@@ -51,6 +53,7 @@ export async function getSettings(): Promise<SchoolSettings> {
     timetable_template: pickTemplate(data?.timetable_template, DOC_TEMPLATES),
     idcard_template: pickTemplate(data?.idcard_template, ID_TEMPLATES),
     accent_color: pickAccent(data?.accent_color),
+    admission_prefix: data?.admission_prefix ?? "",
     logoUrl,
   };
 }
