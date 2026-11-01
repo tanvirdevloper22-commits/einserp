@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { formatDate } from "@/lib/dates";
 import PageHeader from "@/components/PageHeader";
+import ConfirmButton from "@/components/ConfirmButton";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Exams" };
@@ -35,6 +36,35 @@ async function addSubject(formData: FormData) {
   redirect("/exams?added=subject");
 }
 
+async function renameSubject(formData: FormData) {
+  "use server";
+  await requireRole(["admin"]);
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  if (!name || name.length > 60) fail("Enter the subject name (up to 60 characters).");
+  const supabase = await createClient();
+  const { error } = await supabase.from("subjects").update({ name }).eq("id", id);
+  if (error) fail(error.code === "23505" ? `"${name}" is already added.` : `The subject could not be renamed: ${error.message}`);
+  revalidatePath("/exams");
+  redirect("/exams?added=renamed");
+}
+
+async function deleteSubject(formData: FormData) {
+  "use server";
+  await requireRole(["admin"]);
+  const id = String(formData.get("id") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  const supabase = await createClient();
+  // Marks belong to a subject and would be erased with it, so a subject that already has marks is kept.
+  const { count } = await supabase.from("marks").select("id", { count: "exact", head: true }).eq("subject_id", id);
+  if ((count ?? 0) > 0) fail(`This subject already has ${count} mark${count === 1 ? "" : "s"} entered, so it cannot be deleted. You can rename it instead.`);
+  const { error } = await supabase.from("subjects").delete().eq("id", id);
+  if (error) fail(`The subject could not be deleted: ${error.message}`);
+  revalidatePath("/exams");
+  redirect("/exams?added=deleted");
+}
+
 export default async function ExamsPage({ searchParams }: { searchParams: Promise<{ error?: string; added?: string }> }) {
   const sp = await searchParams;
   const { role } = await requireRole(["admin", "teacher"]);
@@ -53,7 +83,7 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
       />
 
       {sp.error && <div className="error">{sp.error}</div>}
-      {sp.added && <div className="notice ok">{sp.added === "exam" ? "Exam created." : "Subject added."}</div>}
+      {sp.added && <div className="notice ok">{sp.added === "exam" ? "Exam created." : sp.added === "renamed" ? "Subject renamed." : sp.added === "deleted" ? "Subject deleted." : "Subject added."}</div>}
 
       {isAdmin && (
         <div className="grid two">
@@ -66,18 +96,34 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
             <div className="form-actions"><button className="btn">Create exam</button></div>
           </form>
 
-          <form action={addSubject} className="card">
+          <div className="card">
             <h2>Subjects</h2>
-            <div className="row tight" style={{ marginBottom: 16 }}>
-              {subjects?.length
-                ? subjects.map((s) => <span key={s.id} className="badge neutral">{s.name}</span>)
-                : <span style={{ color: "var(--muted)" }}>No subjects yet.</span>}
-            </div>
-            <div className="form-grid one">
-              <div><label htmlFor="subject_name">New subject</label><input id="subject_name" name="name" required /></div>
-            </div>
-            <div className="form-actions"><button className="btn ghost">Add subject</button></div>
-          </form>
+            {subjects?.length ? (
+              <div className="stack" style={{ gap: 8, marginBottom: 16 }}>
+                {subjects.map((s) => (
+                  <div key={s.id} className="row tight" style={{ alignItems: "center" }}>
+                    <form action={renameSubject} className="row tight" style={{ flex: 1, alignItems: "center" }}>
+                      <input type="hidden" name="id" value={s.id} />
+                      <input name="name" defaultValue={s.name} maxLength={60} required aria-label={`Subject name ${s.name}`} style={{ flex: 1 }} />
+                      <button className="btn ghost small">Rename</button>
+                    </form>
+                    <form action={deleteSubject}>
+                      <input type="hidden" name="id" value={s.id} />
+                      <ConfirmButton className="btn ghost small" message={`Delete the subject "${s.name}"? Its date sheet entries are removed too. A subject with marks cannot be deleted.`}>Delete</ConfirmButton>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: "var(--muted)" }}>No subjects yet.</p>
+            )}
+            <form action={addSubject}>
+              <div className="form-grid one">
+                <div><label htmlFor="subject_name">New subject</label><input id="subject_name" name="name" required /></div>
+              </div>
+              <div className="form-actions"><button className="btn ghost">Add subject</button></div>
+            </form>
+          </div>
         </div>
       )}
 
