@@ -52,7 +52,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const today = todayISO();
   const monthStart = today.slice(0, 8) + "01";
 
-  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }, { homework }, { data: recentExams }, { data: upcoming }, { data: ride }] = await Promise.all([
+  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }, { homework }, { data: recentExams }, { data: upcoming }, { data: ride }, { data: books }] = await Promise.all([
     supabase.from("attendance").select("status").eq("student_id", child.id).gte("date", monthStart),
     supabase.from("attendance").select("date, status").eq("student_id", child.id).order("date", { ascending: false }).limit(10),
     supabase.from("fee_balances").select("*").eq("student_id", child.id).order("due_date", { ascending: false, nullsFirst: false }),
@@ -62,6 +62,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     supabase.from("exams").select("id, name, exam_date").order("created_at", { ascending: false }).limit(3),
     supabase.from("calendar_events").select("id, title, kind, start_date, end_date").gte("end_date", todayISO()).order("start_date").limit(4),
     supabase.from("student_transport").select("transport_routes(name, monthly_fee, transport_vehicles(reg_no, driver_name, driver_phone)), transport_stops(name, pickup_time)").eq("student_id", child.id).maybeSingle(),
+    supabase.from("library_loans").select("id, due_on, library_books(title)").eq("student_id", child.id).is("returned_on", null).order("due_on").limit(10),
   ]);
 
   const count = (st: string) => (monthRows ?? []).filter((r) => r.status === st).length;
@@ -146,6 +147,27 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </div>
         );
       })()}
+
+      {(books ?? []).length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ margin: "0 0 8px" }}>Library books with your child</h2>
+          <div className="card flush">
+            <table>
+              <tbody>
+                {(books ?? []).map((b) => (
+                  <tr key={b.id as string}>
+                    <td className="strong">{(one(b.library_books as { title: string } | { title: string }[] | null))?.title ?? "Book"}</td>
+                    <td className="num">
+                      Due {formatDate(b.due_on as string)}
+                      {(b.due_on as string) < today && <span className="badge bad" style={{ marginLeft: 6 }}>Overdue</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {(recentExams ?? []).length > 0 && child.class_id && (
         <div style={{ marginBottom: 24 }}>

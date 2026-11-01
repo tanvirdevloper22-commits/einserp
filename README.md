@@ -222,3 +222,14 @@ Run `supabase/025_transport.sql`, then `notify pgrst, 'reload schema';`.
 - "Generate transport fees" (admin, accountant) creates one fee titled `Transport - <period>` per active student at the route's monthly fee. Running it again for the same period skips students who already have it.
 - Parents see their child's route, pickup stop and time, vehicle and driver on the portal.
 - A route that still has students cannot be deleted; deleting a vehicle only unlinks it from its routes.
+
+## Library
+
+Run `supabase/026_library.sql`, then `notify pgrst, 'reload schema';`.
+
+- `/library` (admin manages; teacher and accountant can look): book list with search, copies available, and an "Issued books" tab that marks overdue ones.
+- A book has an accession number, copies and shelf. The admin issues a copy to a student or staff member (14 days by default) and marks it returned.
+- A late return suggests ₹1 per day; the admin can type any fine. The fine is recorded on the loan only, not added to the fees.
+- The last copy cannot be issued twice at once (checked in the database).
+- Parents see books currently with their child, and whether they are overdue, on the portal.
+- A book with issue history cannot be deleted.
