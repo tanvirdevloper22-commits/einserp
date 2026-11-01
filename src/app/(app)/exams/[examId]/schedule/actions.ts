@@ -47,6 +47,38 @@ export async function addPapers(formData: FormData) {
   return go(examId, `added=${classIds.length}`);
 }
 
+/** Adds papers for every ticked subject and every ticked class. Each subject has its own date and time. Existing papers are updated. */
+export async function addPaperBatch(formData: FormData) {
+  await requireRole(["admin"]);
+  const examId = String(formData.get("exam_id") ?? "");
+  if (!UUID.test(examId)) return redirect("/exams");
+  const fail = (m: string): never => go(examId, `error=${encodeURIComponent(m)}`);
+
+  const classIds = [...new Set(formData.getAll("class_id").map(String))].filter((c) => UUID.test(c));
+  const subjectIds = [...new Set(formData.getAll("subject_id").map(String))].filter((c) => UUID.test(c));
+  if (!classIds.length) fail("Tick at least one class.");
+  if (!subjectIds.length) fail("Tick at least one subject.");
+
+  const papers: { subject_id: string; paper_date: string; start_time: string | null; end_time: string | null }[] = [];
+  for (const id of subjectIds) {
+    const date = String(formData.get(`date_${id}`) ?? "");
+    const start = String(formData.get(`start_${id}`) ?? "");
+    const end = String(formData.get(`end_${id}`) ?? "");
+    if (!DATE.test(date)) fail("Every ticked subject needs a date.");
+    if (start && !TIME.test(start)) fail("A start time is not valid.");
+    if (end && !TIME.test(end)) fail("An end time is not valid.");
+    if (start && end && end <= start) fail("An end time must be after its start time.");
+    papers.push({ subject_id: id, paper_date: date, start_time: start || null, end_time: end || null });
+  }
+
+  const rows = classIds.flatMap((class_id) => papers.map((p) => ({ exam_id: examId, class_id, ...p })));
+  const supabase = await createClient();
+  const { error } = await supabase.from("exam_papers").upsert(rows, { onConflict: "exam_id,class_id,subject_id" });
+  if (error) fail(explain(error.message));
+  revalidatePath(`/exams/${examId}/schedule`);
+  return go(examId, `added=${classIds.length}`);
+}
+
 export async function deletePaper(formData: FormData) {
   await requireRole(["admin"]);
   const examId = String(formData.get("exam_id") ?? "");

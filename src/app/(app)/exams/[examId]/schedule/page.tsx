@@ -6,7 +6,8 @@ import { formatDate } from "@/lib/dates";
 import { DEFAULT_INSTRUCTIONS, INSTRUCTIONS_MAX, paperSubject, sortPapers, timeRange, weekday, type Paper } from "@/lib/admit";
 import PageHeader from "@/components/PageHeader";
 import ConfirmButton from "@/components/ConfirmButton";
-import { addPapers, deletePaper, saveInstructions } from "./actions";
+import DateSheetBuilder from "@/components/DateSheetBuilder";
+import { addPaperBatch, deletePaper, saveInstructions } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Exam date sheet" };
@@ -58,35 +59,14 @@ export default async function SchedulePage({ params, searchParams }: { params: P
       {error && <div className="error">The date sheet tables are missing. Run supabase/021_exam_schedule.sql in the Supabase SQL Editor first.</div>}
 
       {isAdmin && (
-        <form action={addPapers} className="card" style={{ marginBottom: 24 }}>
-          <input type="hidden" name="exam_id" value={examId} />
-          <h2 style={{ marginTop: 0 }}>Add a paper</h2>
-          <p className="sub" style={{ marginTop: -6 }}>Tick every class that writes this paper on the same day. Adding a subject that is already on a class&apos;s date sheet updates it.</p>
-          <div className="form-grid">
-            <div>
-              <label htmlFor="subject_id">Subject</label>
-              <select id="subject_id" name="subject_id" required defaultValue="">
-                <option value="" disabled>Choose a subject</option>
-                {(subjects ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <div><label htmlFor="paper_date">Date</label><input id="paper_date" name="paper_date" type="date" required defaultValue={exam.exam_date ?? ""} /></div>
-            <div><label htmlFor="start_time">Starts (optional)</label><input id="start_time" name="start_time" type="time" /></div>
-            <div><label htmlFor="end_time">Ends (optional)</label><input id="end_time" name="end_time" type="time" /></div>
-          </div>
-          <div style={{ marginTop: 14 }}>
-            <label>Classes</label>
-            <div className="row tight" style={{ flexWrap: "wrap", gap: 8 }}>
-              {(classes ?? []).map((c) => (
-                <label key={c.id} className="badge neutral" style={{ display: "inline-flex", gap: 6, alignItems: "center", cursor: "pointer", margin: 0, padding: "6px 10px" }}>
-                  <input type="checkbox" name="class_id" value={c.id} defaultChecked={filter === c.id} style={{ width: "auto", minHeight: 0 }} /> {c.name} - {c.section}
-                </label>
-              ))}
-            </div>
-            {!(classes ?? []).length && <span className="cell-sub">Add classes first.</span>}
-          </div>
-          <div className="form-actions"><button className="btn">Save paper</button></div>
-        </form>
+        <DateSheetBuilder
+          action={addPaperBatch}
+          examId={examId}
+          subjects={(subjects ?? []).map((s) => ({ id: s.id as string, label: s.name as string }))}
+          classes={(classes ?? []).map((c) => ({ id: c.id as string, label: `${c.name} - ${c.section}` }))}
+          defaultDate={(exam.exam_date as string | null) ?? ""}
+          defaultClass={filter}
+        />
       )}
 
       <form method="get" className="card toolbar">

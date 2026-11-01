@@ -259,3 +259,14 @@ Run `supabase/028_librarian.sql` (after 026), then `notify pgrst, 'reload schema
 - A librarian can add, edit and delete books, issue and return them, and find borrowers (active students and staff by name or number). They cannot open students, fees or any other module.
 - A loan now stores the borrower's name and number, so the library pages work without access to the student tables. Existing loans are filled in by the migration.
 - Admin keeps full library access too.
+
+## Date sheet: many subjects at once
+
+No new SQL. On Exams → Date sheet, "Add papers":
+
+- Tick classes (with Select all) and subjects (with Select all). Each ticked subject has its own date, start time and end time.
+- "Fill the dates and times automatically" gives the ticked subjects dates and times one after another, in the order listed:
+  - Gap in **hours**: the next paper starts that many hours after the previous one ends, on the same day. It moves to the next day when it would pass midnight, or when "most papers in one day" is reached.
+  - Gap in **days**: every paper starts at the first start time, that many days after the previous one.
+  - "Skip Sundays" moves a Sunday date to Monday.
+- Every row can still be changed by hand after filling. A subject already on a class's date sheet is updated.
