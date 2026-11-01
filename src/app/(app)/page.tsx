@@ -17,6 +17,7 @@ export default async function Dashboard() {
   const { role, fullName } = await getProfile();
   if (role === "parent") redirect("/portal");
   if (role === "attender") redirect("/attendance/scan");
+  if (role === "librarian") redirect("/library");
   const supabase = await createClient();
   const today = todayISO();
 

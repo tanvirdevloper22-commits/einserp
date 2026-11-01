@@ -15,14 +15,13 @@ export const metadata = { title: "Book" };
 type SP = { error?: string; saved?: string; issued?: string; returned?: string; fine?: string; q?: string };
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 type L = {
-  id: string; issued_on: string; due_on: string; returned_on: string | null; fine: number;
-  students: { full_name: string; admission_no: string } | { full_name: string; admission_no: string }[] | null;
-  staff: { full_name: string; employee_no: string } | { full_name: string; employee_no: string }[] | null;
+  id: string; issued_on: string; due_on: string; returned_on: string | null; fine: number; student_id: string | null;
+  borrower_name: string | null; borrower_ref: string | null;
 };
 
 export default async function BookPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<SP> }) {
-  const me = await requireRole(["admin", "teacher", "accountant"]);
-  const isAdmin = me.role === "admin";
+  const me = await requireRole(["admin", "teacher", "accountant", "librarian"]);
+  const isAdmin = me.role === "admin" || me.role === "librarian"; // may issue, return, edit
   const { id } = await params;
   const sp = await searchParams;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -34,7 +33,7 @@ export default async function BookPage({ params, searchParams }: { params: Promi
 
   const { data: loanData } = await supabase
     .from("library_loans")
-    .select("id, issued_on, due_on, returned_on, fine, students(full_name, admission_no), staff(full_name, employee_no)")
+    .select("id, issued_on, due_on, returned_on, fine, student_id, borrower_name, borrower_ref")
     .eq("book_id", id)
     .order("issued_on", { ascending: false })
     .limit(100);
@@ -46,14 +45,11 @@ export default async function BookPage({ params, searchParams }: { params: Promi
   const q = (sp.q ?? "").trim().replace(/[%,()]/g, " ").slice(0, 40);
   let people: { value: string; label: string }[] = [];
   if (isAdmin && q.length >= 2) {
-    const [s, st] = await Promise.all([
-      supabase.from("students").select("id, full_name, admission_no").eq("status", "active").or(`full_name.ilike.%${q}%,admission_no.ilike.%${q}%`).order("full_name").limit(15),
-      supabase.from("staff").select("id, full_name, employee_no").eq("status", "active").or(`full_name.ilike.%${q}%,employee_no.ilike.%${q}%`).order("full_name").limit(10),
-    ]);
-    people = [
-      ...(s.data ?? []).map((x) => ({ value: `student:${x.id}`, label: `${x.full_name} (student, adm. no. ${x.admission_no})` })),
-      ...(st.data ?? []).map((x) => ({ value: `staff:${x.id}`, label: `${x.full_name} (staff, ${x.employee_no})` })),
-    ];
+    const { data: found } = await supabase.rpc("library_find_borrowers", { q });
+    people = ((found ?? []) as { kind: string; id: string; name: string; ref: string }[]).map((x) => ({
+      value: `${x.kind}:${x.id}`,
+      label: x.kind === "student" ? `${x.name} (student, adm. no. ${x.ref})` : `${x.name} (staff, ${x.ref})`,
+    }));
   }
 
   return (
@@ -106,12 +102,10 @@ export default async function BookPage({ params, searchParams }: { params: Promi
               <thead><tr><th>Borrower</th><th>Issued</th><th>Due</th><th>Returned</th><th className="num">Fine</th><th /></tr></thead>
               <tbody>
                 {loans.map((l) => {
-                  const s = one(l.students);
-                  const st = one(l.staff);
                   const late = daysLate(l.due_on, l.returned_on ?? today);
                   return (
                     <tr key={l.id}>
-                      <td>{s ? <>{s.full_name}<span className="cell-sub">Adm. no. {s.admission_no}</span></> : st ? <>{st.full_name}<span className="cell-sub">Staff · {st.employee_no}</span></> : "-"}</td>
+                      <td>{l.borrower_name ? <>{l.borrower_name}<span className="cell-sub">{l.student_id ? `Adm. no. ${l.borrower_ref ?? "-"}` : `Staff · ${l.borrower_ref ?? "-"}`}</span></> : "-"}</td>
                       <td>{formatDate(l.issued_on)}</td>
                       <td>{formatDate(l.due_on)}</td>
                       <td>{l.returned_on ? formatDate(l.returned_on) : <span className={`badge ${late > 0 ? "bad" : "warn"}`}>{late > 0 ? `${late} day${late === 1 ? "" : "s"} late` : "Not returned"}</span>}</td>

@@ -26,7 +26,7 @@ const links: (NavItem & { roles: Role[] })[] = [
   { href: "/leave", label: "Leave", icon: "leave", roles: ["admin", "teacher", "parent"] },
   { href: "/calendar", label: "Calendar", icon: "calendar", roles: ["admin", "teacher", "accountant", "parent"] },
   { href: "/transport", label: "Transport", icon: "transport", roles: ["admin", "accountant", "teacher"] },
-  { href: "/library", label: "Library", icon: "library", roles: ["admin", "accountant", "teacher"] },
+  { href: "/library", label: "Library", icon: "library", roles: ["admin", "accountant", "teacher", "librarian"] },
   { href: "/notices", label: "Notices", icon: "notices", roles: [...STAFF_ROLES, "parent"] },
   { href: "/certificates", label: "Certificates", icon: "certificate", roles: ["admin"] },
   { href: "/staff", label: "Staff", icon: "staff", roles: ["admin"] },
@@ -59,7 +59,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
       <main className="main">
-        {isStaff || profile.role === "parent" || profile.role === "attender" ? (
+        {isStaff || profile.role === "parent" || profile.role === "attender" || profile.role === "librarian" ? (
           children
         ) : (
           <div className="card" style={{ maxWidth: 520 }}>

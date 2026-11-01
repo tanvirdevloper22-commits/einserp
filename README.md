@@ -250,3 +250,12 @@ Run `supabase/027_admission_prefix.sql`.
 - Settings → Admission number: set a prefix such as `EINS/`. The New admission form then fills in the next number (EINS/0001, EINS/0002, ...). The width of the existing numbers is kept and the admin can still type any number.
 - With no prefix, the next plain number is suggested only if plain numbers already exist.
 - Student photos in the student list are shown whole (portrait box) instead of cropped to a square.
+
+## Librarian role
+
+Run `supabase/028_librarian.sql` (after 026), then `notify pgrst, 'reload schema';` (the file does it too).
+
+- Users → create a user with the role **librarian**. They land on `/library` after login and see only the Library in the sidebar.
+- A librarian can add, edit and delete books, issue and return them, and find borrowers (active students and staff by name or number). They cannot open students, fees or any other module.
+- A loan now stores the borrower's name and number, so the library pages work without access to the student tables. Existing loans are filled in by the migration.
+- Admin keeps full library access too.

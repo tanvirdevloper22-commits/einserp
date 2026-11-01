@@ -14,15 +14,14 @@ type SP = { error?: string; added?: string; deleted?: string; returned?: string;
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 type OpenLoan = {
-  id: string; book_id: string; issued_on: string; due_on: string;
+  id: string; book_id: string; issued_on: string; due_on: string; student_id: string | null;
+  borrower_name: string | null; borrower_ref: string | null;
   library_books: { title: string; accession_no: string } | { title: string; accession_no: string }[] | null;
-  students: { full_name: string; admission_no: string } | { full_name: string; admission_no: string }[] | null;
-  staff: { full_name: string; employee_no: string } | { full_name: string; employee_no: string }[] | null;
 };
 
 export default async function LibraryPage({ searchParams }: { searchParams: Promise<SP> }) {
-  const me = await requireRole(["admin", "teacher", "accountant"]);
-  const isAdmin = me.role === "admin";
+  const me = await requireRole(["admin", "teacher", "accountant", "librarian"]);
+  const isAdmin = me.role === "admin" || me.role === "librarian"; // may add books, issue and return
   const sp = await searchParams;
   const supabase = await createClient();
   const today = todayISO();
@@ -37,7 +36,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
     supabase.from("library_books").select("copies"),
     supabase
       .from("library_loans")
-      .select("id, book_id, issued_on, due_on, library_books(title, accession_no), students(full_name, admission_no), staff(full_name, employee_no)")
+      .select("id, book_id, issued_on, due_on, student_id, borrower_name, borrower_ref, library_books(title, accession_no)")
       .is("returned_on", null)
       .order("due_on")
       .limit(500),
@@ -61,7 +60,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       {failed && (
         <div className="error">
           {/schema cache|library_|does not exist|relationship/i.test(failed.message)
-            ? "The library tables are missing, or Supabase has not noticed them yet. Run supabase/026_library.sql, then run: notify pgrst, 'reload schema';"
+            ? "The library tables are missing or out of date, or Supabase has not noticed them yet. Run supabase/026_library.sql and supabase/028_librarian.sql, then run: notify pgrst, 'reload schema';"
             : `The library could not be loaded: ${failed.message}`}
         </div>
       )}
@@ -134,13 +133,11 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
                 <tbody>
                   {loans.map((l) => {
                     const bk = one(l.library_books);
-                    const s = one(l.students);
-                    const st = one(l.staff);
                     const late = daysLate(l.due_on, today);
                     return (
                       <tr key={l.id}>
                         <td><Link className="strong" href={`/library/books/${l.book_id}`}>{bk?.title ?? "Book"}</Link><span className="cell-sub">{bk?.accession_no}</span></td>
-                        <td>{s ? <>{s.full_name}<span className="cell-sub">Adm. no. {s.admission_no}</span></> : st ? <>{st.full_name}<span className="cell-sub">Staff · {st.employee_no}</span></> : "-"}</td>
+                        <td>{l.borrower_name ? <>{l.borrower_name}<span className="cell-sub">{l.student_id ? `Adm. no. ${l.borrower_ref ?? "-"}` : `Staff · ${l.borrower_ref ?? "-"}`}</span></> : "-"}</td>
                         <td>{formatDate(l.issued_on)}</td>
                         <td>{formatDate(l.due_on)}{late > 0 && <span className="badge bad" style={{ marginLeft: 6 }}>{late} day{late === 1 ? "" : "s"} late</span>}</td>
                         <td className="num">

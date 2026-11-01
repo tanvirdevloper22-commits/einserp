@@ -29,7 +29,7 @@ function readBook(f: FormData, back: string) {
 }
 
 export async function addBook(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "librarian"]);
   const row = readBook(formData, "/library");
   const supabase = await createClient();
   const { error } = await supabase.from("library_books").insert(row);
@@ -39,7 +39,7 @@ export async function addBook(formData: FormData) {
 }
 
 export async function updateBook(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "librarian"]);
   const id = t(formData, "id");
   if (!UUID.test(id)) return redirect("/library");
   const back = `/library/books/${id}`;
@@ -54,7 +54,7 @@ export async function updateBook(formData: FormData) {
 }
 
 export async function deleteBook(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "librarian"]);
   const id = t(formData, "id");
   if (!UUID.test(id)) return;
   const supabase = await createClient();
@@ -65,7 +65,7 @@ export async function deleteBook(formData: FormData) {
 }
 
 export async function issueBook(formData: FormData) {
-  const me = await requireRole(["admin"]);
+  const me = await requireRole(["admin", "librarian"]);
   const bookId = t(formData, "book_id");
   const who = t(formData, "borrower"); // "student:<id>" or "staff:<id>"
   const back = `/library/books/${bookId}`;
@@ -92,7 +92,7 @@ export async function issueBook(formData: FormData) {
 }
 
 export async function returnBook(formData: FormData) {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "librarian"]);
   const id = t(formData, "id");
   const back = t(formData, "back") === "library" ? "/library" : `/library/books/${t(formData, "book_id")}`;
   if (!UUID.test(id)) return;
