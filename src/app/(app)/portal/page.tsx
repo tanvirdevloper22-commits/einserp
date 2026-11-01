@@ -8,6 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import NoticeList from "@/components/NoticeList";
 import { getNotices } from "@/lib/notices";
 import { getCurrentHomework } from "@/lib/homework";
+import { clock } from "@/lib/transport";
 import { KIND_BADGE, KIND_LABEL, rangeLabel, type EventKind } from "@/lib/calendar";
 import HomeworkList from "@/components/HomeworkList";
 
@@ -51,7 +52,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const today = todayISO();
   const monthStart = today.slice(0, 8) + "01";
 
-  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }, { homework }, { data: recentExams }, { data: upcoming }] = await Promise.all([
+  const [{ data: monthRows }, { data: recent }, { data: fees }, { data: marks }, { notices: latestNotices }, { homework }, { data: recentExams }, { data: upcoming }, { data: ride }] = await Promise.all([
     supabase.from("attendance").select("status").eq("student_id", child.id).gte("date", monthStart),
     supabase.from("attendance").select("date, status").eq("student_id", child.id).order("date", { ascending: false }).limit(10),
     supabase.from("fee_balances").select("*").eq("student_id", child.id).order("due_date", { ascending: false, nullsFirst: false }),
@@ -60,6 +61,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     child.class_id ? getCurrentHomework(child.class_id) : Promise.resolve({ homework: [], error: null }),
     supabase.from("exams").select("id, name, exam_date").order("created_at", { ascending: false }).limit(3),
     supabase.from("calendar_events").select("id, title, kind, start_date, end_date").gte("end_date", todayISO()).order("start_date").limit(4),
+    supabase.from("student_transport").select("transport_routes(name, monthly_fee, transport_vehicles(reg_no, driver_name, driver_phone)), transport_stops(name, pickup_time)").eq("student_id", child.id).maybeSingle(),
   ]);
 
   const count = (st: string) => (monthRows ?? []).filter((r) => r.status === st).length;
@@ -124,6 +126,26 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </div>
         </div>
       )}
+
+      {(() => {
+        const rt = one(ride?.transport_routes as never) as { name: string; transport_vehicles: { reg_no: string; driver_name: string | null; driver_phone: string | null } | { reg_no: string; driver_name: string | null; driver_phone: string | null }[] | null } | null;
+        if (!rt) return null;
+        const veh = one(rt.transport_vehicles);
+        const stop = one(ride?.transport_stops as never) as { name: string; pickup_time: string | null } | null;
+        return (
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={{ margin: "0 0 8px" }}>School transport</h2>
+            <div className="card">
+              <div className="strong">{rt.name}</div>
+              <p className="sub" style={{ margin: "4px 0 0" }}>
+                {stop ? `Pickup: ${stop.name}${stop.pickup_time ? ` at ${clock(stop.pickup_time)}` : ""}` : "Pickup stop not set yet"}
+                {veh ? ` · Vehicle ${veh.reg_no}` : ""}
+                {veh?.driver_name ? ` · Driver ${veh.driver_name}${veh.driver_phone ? ` (${veh.driver_phone})` : ""}` : ""}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {(recentExams ?? []).length > 0 && child.class_id && (
         <div style={{ marginBottom: 24 }}>

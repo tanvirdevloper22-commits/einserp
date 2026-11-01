@@ -212,3 +212,13 @@ Setup: run `supabase/023_enquiries_and_categories.sql` in the Supabase SQL Edito
 Where it shows up elsewhere: the attendance page warns when the chosen date is a holiday, and each parent's portal has a "Coming up" list of the next few entries.
 
 Setup: run `supabase/024_calendar.sql` in the Supabase SQL Editor.
+
+## Transport
+
+Run `supabase/025_transport.sql`, then `notify pgrst, 'reload schema';`.
+
+- `/transport` (admin, accountant, teacher read; admin edits): vehicles with insurance and fitness expiry badges, routes, stops, students per route.
+- A route's vehicle capacity limits how many students can be added.
+- "Generate transport fees" (admin, accountant) creates one fee titled `Transport - <period>` per active student at the route's monthly fee. Running it again for the same period skips students who already have it.
+- Parents see their child's route, pickup stop and time, vehicle and driver on the portal.
+- A route that still has students cannot be deleted; deleting a vehicle only unlinks it from its routes.
