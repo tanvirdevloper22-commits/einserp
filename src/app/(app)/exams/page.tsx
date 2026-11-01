@@ -36,6 +36,18 @@ async function addSubject(formData: FormData) {
   redirect("/exams?added=subject");
 }
 
+async function deleteExam(formData: FormData) {
+  "use server";
+  await requireRole(["admin"]);
+  const id = String(formData.get("id") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return;
+  const supabase = await createClient();
+  const { error } = await supabase.from("exams").delete().eq("id", id);
+  if (error) fail(`The exam could not be deleted: ${error.message}`);
+  revalidatePath("/exams");
+  redirect("/exams?added=examdeleted");
+}
+
 async function renameSubject(formData: FormData) {
   "use server";
   await requireRole(["admin"]);
@@ -75,6 +87,15 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
     supabase.from("subjects").select("*").order("name"),
   ]);
 
+  // How many marks each exam holds, so the delete warning can say what would be lost.
+  const markCount = new Map<string, number>();
+  if (isAdmin) {
+    await Promise.all((exams ?? []).map(async (e) => {
+      const { count } = await supabase.from("marks").select("id", { count: "exact", head: true }).eq("exam_id", e.id);
+      markCount.set(e.id as string, count ?? 0);
+    }));
+  }
+
   return (
     <>
       <PageHeader
@@ -83,7 +104,7 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
       />
 
       {sp.error && <div className="error">{sp.error}</div>}
-      {sp.added && <div className="notice ok">{sp.added === "exam" ? "Exam created." : sp.added === "renamed" ? "Subject renamed." : sp.added === "deleted" ? "Subject deleted." : "Subject added."}</div>}
+      {sp.added && <div className="notice ok">{sp.added === "exam" ? "Exam created." : sp.added === "examdeleted" ? "Exam deleted." : sp.added === "renamed" ? "Subject renamed." : sp.added === "deleted" ? "Subject deleted." : "Subject added."}</div>}
 
       {isAdmin && (
         <div className="grid two">
@@ -141,6 +162,21 @@ export default async function ExamsPage({ searchParams }: { searchParams: Promis
                     <Link className="btn ghost small" href={`/exams/${e.id}/admit-cards`}>Admit cards</Link>{" "}
                     <Link className="btn ghost small" href={`/exams/${e.id}`}>Enter marks</Link>{" "}
                     <Link className="btn ghost small" href={`/exams/${e.id}/results`}>Results</Link>
+                    {isAdmin && (
+                      <form action={deleteExam} style={{ display: "inline", marginLeft: 6 }}>
+                        <input type="hidden" name="id" value={e.id} />
+                        <ConfirmButton
+                          className="btn ghost small"
+                          message={
+                            (markCount.get(e.id as string) ?? 0) > 0
+                              ? `Delete "${e.name}"? ${markCount.get(e.id as string)} marks entered for it, its report cards and its date sheet will be permanently deleted. This cannot be undone.`
+                              : `Delete "${e.name}" and its date sheet? This cannot be undone.`
+                          }
+                        >
+                          Delete
+                        </ConfirmButton>
+                      </form>
+                    )}
                   </td>
                 </tr>
               ))}
