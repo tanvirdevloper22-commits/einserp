@@ -17,7 +17,7 @@ const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { minimumFractionDi
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 export default async function SalarySlipPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireRole(["admin"]);
+  const me = await requireRole(["admin", "teacher", "accountant"]); // others only get their own paid slip (RLS)
   const { id } = await params;
   const supabase = await createClient();
 
@@ -37,7 +37,7 @@ export default async function SalarySlipPage({ params }: { params: Promise<{ id:
   return (
     <>
       <PageHeader title="Salary slip" description={`${st?.full_name ?? "Staff member"} · ${monthLabel(slip.month)}`}>
-        <Link className="btn ghost" href={`/payroll?month=${slip.month}`}>Back to payroll</Link>
+        <Link className="btn ghost" href={me.role === "admin" ? `/payroll?month=${slip.month}` : "/me"}>{me.role === "admin" ? "Back to payroll" : "Back"}</Link>
         <PrintButton />
       </PageHeader>
 

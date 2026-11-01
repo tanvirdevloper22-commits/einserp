@@ -233,3 +233,12 @@ Run `supabase/026_library.sql`, then `notify pgrst, 'reload schema';`.
 - The last copy cannot be issued twice at once (checked in the database).
 - Parents see books currently with their child, and whether they are overdue, on the portal.
 - A book with issue history cannot be deleted.
+
+## My work (teacher and accountant)
+
+No new SQL. Uses the existing row-level rules from migrations 012, 013, 014 and 022.
+
+- `/me` shows the logged-in staff member's own details, attendance for any month, paid salary slips and (teachers) recent leave.
+- It needs the login to be linked to a staff record: Staff → open the person → choose the login account. Otherwise the page says so.
+- A salary slip appears only after the admin marks it paid. A draft slip is never visible to the staff member.
+- Salary slips open at `/payroll/slip/<id>` and can be printed; others' slips are blocked by the database, not just the page.
